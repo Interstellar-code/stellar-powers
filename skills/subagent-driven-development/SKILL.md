@@ -3,6 +3,26 @@ name: subagent-driven-development
 description: Use when executing implementation plans with independent tasks in the current session
 ---
 
+## Workflow Logging
+
+On invocation, generate a workflow ID and log:
+
+```bash
+WF_ID=$(uuidgen 2>/dev/null || python3 -c "import uuid; print(uuid.uuid4())")
+mkdir -p .stellar-powers
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"skill_invocation\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"skill\":\"subagent-driven-development\",\"args\":\"\"}}" >> .stellar-powers/workflow.jsonl
+```
+
+After each review verdict (spec compliance or code quality), log:
+
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"review_verdict\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"verdict\":\"VERDICT\",\"reviewer_persona\":\"PERSONA\",\"iteration\":N,\"spec_path\":\"PATH\"}}" >> .stellar-powers/workflow.jsonl
+```
+
+Replace `VERDICT`, `PERSONA` (spec-reviewer/code-quality-reviewer), `N`, and `PATH` with actual values.
+
+Check `.stellar-powers/workflow.jsonl` for incomplete workflows. If found, load context. Do not re-prompt.
+
 # Subagent-Driven Development
 
 Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
@@ -130,7 +150,7 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 ```
 You: I'm using Subagent-Driven Development to execute this plan.
 
-[Read plan file once: docs/stellar-powers/plans/feature-plan.md]
+[Read plan file once: .stellar-powers/plans/feature-plan.md]
 [Extract all 5 tasks with full text and context]
 [Create TodoWrite with all tasks]
 
