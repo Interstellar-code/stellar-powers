@@ -3,6 +3,24 @@ name: requesting-code-review
 description: Use when completing tasks, implementing major features, or before merging to verify work meets requirements
 ---
 
+## Workflow Logging
+
+On invocation, generate a workflow ID and log:
+
+```bash
+WF_ID=$(uuidgen 2>/dev/null || python3 -c "import uuid; print(uuid.uuid4())")
+mkdir -p .stellar-powers
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"skill_invocation\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"skill\":\"requesting-code-review\",\"args\":\"\"}}" >> .stellar-powers/workflow.jsonl
+```
+
+After each review verdict, log:
+
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"review_verdict\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"verdict\":\"VERDICT\",\"reviewer_persona\":\"code-reviewer\",\"iteration\":N,\"spec_path\":\"PATH\"}}" >> .stellar-powers/workflow.jsonl
+```
+
+Replace `VERDICT` (approved/issues_found), `N` (iteration number), and `PATH` with actual values.
+
 # Requesting Code Review
 
 Dispatch stellar-powers:code-reviewer subagent to catch issues before they cascade. The reviewer gets precisely crafted context for evaluation — never your session's history. This keeps the reviewer focused on the work product, not your thought process, and preserves your own context for continued work.
@@ -58,7 +76,7 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 [Dispatch stellar-powers:code-reviewer subagent]
   WHAT_WAS_IMPLEMENTED: Verification and repair functions for conversation index
-  PLAN_OR_REQUIREMENTS: Task 2 from docs/stellar-powers/plans/deployment-plan.md
+  PLAN_OR_REQUIREMENTS: Task 2 from .stellar-powers/plans/deployment-plan.md
   BASE_SHA: a7981ec
   HEAD_SHA: 3df7661
   DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
