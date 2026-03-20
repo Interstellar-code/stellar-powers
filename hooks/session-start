@@ -32,7 +32,122 @@ escape_for_json() {
 
 using_superpowers_escaped=$(escape_for_json "$using_superpowers_content")
 warning_escaped=$(escape_for_json "$warning_message")
-session_context="<EXTREMELY_IMPORTANT>\nYou have stellar powers.\n\n**Below is the full content of your 'stellar-powers:using-stellar-powers' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${using_superpowers_escaped}\n\n${warning_escaped}\n</EXTREMELY_IMPORTANT>"
+
+# Check for old-path specs/plans that need migration
+migration_message=""
+if [ -d "${PWD}/docs/stellar-powers/specs" ] || [ -d "${PWD}/docs/stellar-powers/plans" ]; then
+    migration_message="\n\nStellar Powers: Specs/plans path changed from docs/stellar-powers/ to .stellar-powers/.\nFound existing files at old path. Run: mv docs/stellar-powers/specs/* .stellar-powers/specs/ && mv docs/stellar-powers/plans/* .stellar-powers/plans/"
+fi
+
+# Check for incomplete workflows in .stellar-powers/workflow.jsonl
+workflow_summary=""
+WORKFLOW_FILE="${PWD}/.stellar-powers/workflow.jsonl"
+if [ -f "$WORKFLOW_FILE" ]; then
+    workflow_summary=$(python3 -c "
+import json, sys
+from datetime import datetime, timedelta, timezone
+
+cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+events = []
+try:
+    with open(sys.argv[1]) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                events.append(json.loads(line))
+            except:
+                continue
+except:
+    sys.exit(0)
+
+# Group by workflow_id
+workflows = {}
+for e in events:
+    wid = e.get('workflow_id', '')
+    if not wid:
+        continue
+    try:
+        ts = datetime.fromisoformat(e['ts'].replace('Z', '+00:00'))
+        if ts < cutoff:
+            continue
+    except:
+        continue
+    workflows.setdefault(wid, []).append(e)
+
+# Check completion rules
+incomplete = []
+for wid, evts in workflows.items():
+    event_types = [e['event'] for e in evts]
+
+    # Abandoned workflows are terminal
+    if 'workflow_abandoned' in event_types:
+        continue
+
+    for e in evts:
+        if e['event'] != 'skill_invocation':
+            continue
+        skill = e.get('data', {}).get('skill', '')
+        ts_str = e['ts'][:10]
+
+        if skill == 'brainstorming':
+            has_approval = any(
+                ev['event'] == 'review_verdict' and ev.get('data', {}).get('verdict') == 'approved'
+                for ev in evts
+            )
+            if not has_approval:
+                spec_path = ''
+                for ev in evts:
+                    if ev['event'] == 'spec_created':
+                        spec_path = ev.get('data', {}).get('path', '')
+                status = f'spec written ({ts_str}) but review not approved' if any(ev['event'] == 'spec_created' for ev in evts) else f'started ({ts_str}) but no spec written'
+                line = f'  - brainstorming [{wid[:8]}]: {status}'
+                if spec_path:
+                    line += f'\n    -> {spec_path}'
+                incomplete.append(line)
+
+        elif skill == 'writing-plans':
+            has_plan = any(ev['event'] == 'plan_created' for ev in evts)
+            if not has_plan:
+                incomplete.append(f'  - writing-plans [{wid[:8]}]: plan not yet written ({ts_str})')
+
+    # Check spec_created without approved review
+    for e in evts:
+        if e['event'] == 'spec_created':
+            has_approval = any(
+                ev['event'] == 'review_verdict' and ev.get('data', {}).get('verdict') == 'approved'
+                for ev in evts
+            )
+            if not has_approval:
+                path = e.get('data', {}).get('path', '')
+                if not any('brainstorming' in inc for inc in incomplete if wid[:8] in inc):
+                    incomplete.append(f'  - spec [{wid[:8]}]: written but not approved\n    -> {path}')
+
+    # Check plan_created without executing-plans
+    for e in evts:
+        if e['event'] == 'plan_created':
+            has_execution = any(
+                ev['event'] == 'skill_invocation' and ev.get('data', {}).get('skill') == 'executing-plans'
+                for ev in evts
+            )
+            if not has_execution:
+                path = e.get('data', {}).get('path', '')
+                incomplete.append(f'  - plan [{wid[:8]}]: written but not started\n    -> {path}')
+
+if incomplete:
+    print('Stellar Powers — Incomplete work detected:')
+    for line in incomplete:
+        print(line)
+    print()
+    print('  To resume a workflow, invoke the relevant skill — it will pick up from workflow.jsonl.')
+    print('  To abandon, tell Claude: \"abandon workflow [workflow_id]\"')
+" "$WORKFLOW_FILE" 2>/dev/null) || workflow_summary=""
+fi
+
+migration_escaped=$(escape_for_json "$migration_message")
+workflow_escaped=$(escape_for_json "$workflow_summary")
+session_context="<EXTREMELY_IMPORTANT>\nYou have stellar powers.\n\n**Below is the full content of your 'stellar-powers:using-stellar-powers' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${using_superpowers_escaped}\n\n${warning_escaped}${migration_escaped}\n\n${workflow_escaped}\n</EXTREMELY_IMPORTANT>"
 
 # Output context injection as JSON.
 # Cursor hooks expect additional_context.
