@@ -15,8 +15,26 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Context:** This should be run in a dedicated worktree (created by brainstorming skill).
 
-**Save plans to:** `docs/stellar-powers/plans/YYYY-MM-DD-<feature-name>.md`
+**Save plans to:** `.stellar-powers/plans/YYYY-MM-DD-<feature-name>.md`
 - (User preferences for plan location override this default)
+
+## Workflow Logging
+
+On invocation, generate a workflow ID and log:
+
+```bash
+WF_ID=$(uuidgen 2>/dev/null || python3 -c "import uuid; print(uuid.uuid4())")
+mkdir -p .stellar-powers/specs .stellar-powers/plans
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"skill_invocation\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"skill\":\"writing-plans\",\"args\":\"\"}}" >> .stellar-powers/workflow.jsonl
+```
+
+Check `.stellar-powers/workflow.jsonl` for incomplete writing-plans workflows. If found, load the most recent workflow's context to inform your work. Do not re-prompt the user.
+
+After saving the plan, log plan creation:
+
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"plan_created\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"path\":\"PLAN_PATH\",\"skill\":\"writing-plans\",\"topic\":\"TOPIC\"}}" >> .stellar-powers/workflow.jsonl
+```
 
 ## Scope Check
 
@@ -127,7 +145,7 @@ After writing the complete plan:
 
 After saving the plan, offer execution choice:
 
-**"Plan complete and saved to `docs/stellar-powers/plans/<filename>.md`. Two execution options:**
+**"Plan complete and saved to `.stellar-powers/plans/<filename>.md`. Two execution options:**
 
 **1. Subagent-Driven (recommended)** - I dispatch a fresh subagent per task, review between tasks, fast iteration
 
