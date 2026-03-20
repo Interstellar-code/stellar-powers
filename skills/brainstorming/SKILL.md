@@ -21,12 +21,19 @@ Every project goes through this process. A todo list, a single-function utility,
 
 You MUST create a task for each of these items and complete them in order:
 
+0. **Workflow setup** — Generate workflow ID and log skill invocation:
+   ```bash
+   WF_ID=$(uuidgen 2>/dev/null || python3 -c "import uuid; print(uuid.uuid4())")
+   mkdir -p .stellar-powers/specs .stellar-powers/plans
+   echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"skill_invocation\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"skill\":\"brainstorming\",\"args\":\"$(echo "$ARGS" | sed 's/"/\\\\"/g')\"}}" >> .stellar-powers/workflow.jsonl
+   ```
+   Also check `.stellar-powers/workflow.jsonl` for incomplete brainstorming workflows. If found, load the most recent workflow's context (spec path, last event) to inform your work. Do not re-prompt the user — session-start already surfaced incomplete work.
 1. **Explore project context** — check files, docs, recent commits
 2. **Offer visual companion** (if topic will involve visual questions) — this is its own message, not combined with a clarifying question. See the Visual Companion section below.
 3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
 5. **Present design** — in sections scaled to their complexity, get user approval after each section
-6. **Write design doc** — save to `docs/stellar-powers/specs/YYYY-MM-DD-<topic>-design.md` and commit
+6. **Write design doc** — save to `.stellar-powers/specs/YYYY-MM-DD-<topic>-design.md` and commit
 7. **Spec review loop** — dispatch spec-document-reviewer subagent with precisely crafted review context (never your session history); fix issues and re-dispatch until approved (max 3 iterations, then surface to human)
 8. **User reviews written spec** — ask user to review the spec file before proceeding
 9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
@@ -111,10 +118,15 @@ digraph brainstorming {
 
 **Documentation:**
 
-- Write the validated design (spec) to `docs/stellar-powers/specs/YYYY-MM-DD-<topic>-design.md`
+- Write the validated design (spec) to `.stellar-powers/specs/YYYY-MM-DD-<topic>-design.md`
   - (User preferences for spec location override this default)
 - Use elements-of-style:writing-clearly-and-concisely skill if available
 - Commit the design document to git
+- Log spec creation to workflow:
+  ```bash
+  echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"spec_created\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"path\":\"SPEC_PATH\",\"skill\":\"brainstorming\",\"topic\":\"TOPIC\"}}" >> .stellar-powers/workflow.jsonl
+  ```
+  Replace `SPEC_PATH` and `TOPIC` with actual values.
 
 **Spec Review Loop:**
 After writing the spec document:
