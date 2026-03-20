@@ -1,5 +1,22 @@
 # Stellar Powers Release Notes
 
+## v1.0.5 (2026-03-20)
+
+### Critical Fix: Enforce persona template usage
+
+- **SKILL.md dispatch instructions made mandatory** — brainstorming, writing-plans, subagent-driven-development, and requesting-code-review skills now explicitly instruct the agent to READ the prompt template files before dispatching subagents. Previously, agents were constructing their own ad-hoc prompts and bypassing the persona injections entirely.
+- This ensures the multi-persona catalog and single-persona injections are actually used during reviews.
+
+---
+
+## v1.0.4 (2026-03-20)
+
+### Fixes
+
+- **Renamed `using-stellar-powers` directory** to `using-stellarpowers` (no dash)
+
+---
+
 ## v1.0.3 (2026-03-20)
 
 ### Fixes

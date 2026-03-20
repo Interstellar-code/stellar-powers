@@ -114,8 +114,7 @@ git commit -m "feat: add specific feature"
 
 After writing the complete plan:
 
-1. Dispatch a single plan-document-reviewer subagent (see plan-document-reviewer-prompt.md) with precisely crafted review context — never your session history. This keeps the reviewer focused on the plan, not your thought process.
-   - Provide: path to the plan document, path to spec document
+1. **MANDATORY:** Read the prompt template at `./plan-document-reviewer-prompt.md` using the Read tool, then dispatch a subagent using the Agent tool with that template's contents as the prompt. Do NOT construct your own review prompt — the template contains the multi-persona catalog that ensures domain-expert review quality. Replace `[PLAN_FILE_PATH]` and `[SPEC_FILE_PATH]` with actual paths. Never pass your session history — only the crafted prompt.
 2. If ❌ Issues Found: fix the issues, re-dispatch reviewer for the whole plan
 3. If ✅ Approved: proceed to execution handoff
 

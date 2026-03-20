@@ -119,7 +119,7 @@ digraph brainstorming {
 **Spec Review Loop:**
 After writing the spec document:
 
-1. Dispatch spec-document-reviewer subagent (see spec-document-reviewer-prompt.md)
+1. **MANDATORY:** Read the prompt template at `./spec-document-reviewer-prompt.md` using the Read tool, then dispatch a subagent using the Agent tool with that template's contents as the prompt. Do NOT construct your own review prompt — the template contains the multi-persona catalog that ensures domain-expert review quality.
 2. If Issues Found: fix, re-dispatch, repeat until Approved
 3. If loop exceeds 3 iterations, surface to human for guidance
 

@@ -31,7 +31,7 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 **2. Dispatch code-reviewer subagent:**
 
-Use Task tool with stellar-powers:code-reviewer type, fill template at `code-reviewer.md`
+**MANDATORY:** Read the prompt template at `./code-reviewer.md` using the Read tool. Use its contents as the subagent prompt, replacing the placeholders below. Do NOT construct your own review prompt — the template contains Code Reviewer persona and Security/Architect supporting lenses.
 
 **Placeholders:**
 - `{WHAT_WAS_IMPLEMENTED}` - What you just built

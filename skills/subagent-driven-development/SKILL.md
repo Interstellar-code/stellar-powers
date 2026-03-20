@@ -119,9 +119,11 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 
 ## Prompt Templates
 
-- `./implementer-prompt.md` - Dispatch implementer subagent
-- `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
-- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+**MANDATORY:** Before dispatching any subagent, Read the corresponding prompt template file using the Read tool. Use the template's contents as the subagent prompt. Do NOT construct your own ad-hoc prompts — the templates contain persona injections (Software Architect, Code Reviewer) that ensure expert-level review quality.
+
+- `./implementer-prompt.md` - Read and use as prompt when dispatching implementer subagent
+- `./spec-reviewer-prompt.md` - Read and use as prompt when dispatching spec compliance reviewer subagent (contains Software Architect persona)
+- `./code-quality-reviewer-prompt.md` - Read and use as prompt when dispatching code quality reviewer subagent (contains Code Reviewer persona)
 
 ## Example Workflow
 
