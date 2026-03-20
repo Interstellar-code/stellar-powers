@@ -1,5 +1,13 @@
 # Stellar Powers Release Notes
 
+## v1.0.1 (2026-03-20)
+
+### Fixes
+
+- **Deprecated commands updated** — `/brainstorm`, `/write-plan`, `/execute-plan` now correctly reference `stellar-powers:` skills instead of `superpowers:`
+
+---
+
 ## v1.0.0 (2026-03-20)
 
 ### Initial Release

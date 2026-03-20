@@ -1,6 +1,6 @@
 {
   "name": "stellar-powers",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "main": ".opencode/plugins/superpowers.js"
 }
