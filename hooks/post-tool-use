@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# PostToolUse hook for stellar-powers plugin
+# Logs Agent dispatches and checks persona template compliance.
+# Receives JSON on stdin from Claude Code.
+# MUST exit 0 in all cases (silent degradation).
+
+# Read stdin into variable
+INPUT=$(cat 2>/dev/null) || { exit 0; }
+
+# Extract fields using python3 (available on macOS/Linux)
+# Falls back to exit 0 if python3 unavailable
+extract() {
+    python3 -c "
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+    # Navigate dotted path
+    parts = sys.argv[2].split('.')
+    val = data
+    for p in parts:
+        val = val[p]
+    print(val if isinstance(val, str) else json.dumps(val))
+except:
+    print('')
+" "$INPUT" "$1" 2>/dev/null || echo ""
+}
+
+CWD=$(extract "cwd")
+TOOL_NAME=$(extract "tool_name")
+SESSION_ID=$(extract "session_id")
+
+# Only process Agent tool calls
+if [ "$TOOL_NAME" != "Agent" ]; then
+    exit 0
+fi
+
+# Ensure .stellar-powers directory exists
+if [ -n "$CWD" ]; then
+    mkdir -p "${CWD}/.stellar-powers" 2>/dev/null || exit 0
+else
+    exit 0
+fi
+
+WORKFLOW_FILE="${CWD}/.stellar-powers/workflow.jsonl"
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date +"%Y-%m-%dT%H:%M:%SZ")
+
+# Extract Agent tool input fields
+PROMPT=$(extract "tool_input.prompt")
+SUBAGENT_TYPE=$(extract "tool_input.subagent_type")
+MODEL=$(extract "tool_input.model")
+DESCRIPTION=$(extract "tool_input.description")
+
+# Check for exempt dispatches
+case "$SUBAGENT_TYPE" in
+    Explore|Plan) exit 0 ;;
+esac
+
+# Check for built-in reviewer templates (also exempt)
+case "$PROMPT" in
+    *"spec document reviewer"*|*"code quality reviewer"*) exit 0 ;;
+esac
+
+# Detect persona template markers (case-insensitive via bash lowercasing)
+PROMPT_LOWER=$(echo "$PROMPT" | tr '[:upper:]' '[:lower:]' 2>/dev/null || echo "$PROMPT")
+HAS_PERSONA="false"
+
+MARKERS=(
+    "you are a"
+    "## agent persona catalog"
+    "## persona summary"
+    "### core:"
+)
+
+for marker in "${MARKERS[@]}"; do
+    if [[ "$PROMPT_LOWER" == *"$marker"* ]]; then
+        HAS_PERSONA="true"
+        break
+    fi
+done
+
+# Build agent_dispatch event
+# Use python3 for safe JSON construction
+python3 -c "
+import json, sys
+event = {
+    'ts': sys.argv[1],
+    'event': 'agent_dispatch',
+    'workflow_id': '',
+    'session': sys.argv[2],
+    'data': {
+        'persona': '',
+        'task': sys.argv[3],
+        'model': sys.argv[4],
+        'has_persona_template': sys.argv[5] == 'true'
+    }
+}
+print(json.dumps(event, ensure_ascii=False))
+" "$TIMESTAMP" "$SESSION_ID" "$DESCRIPTION" "$MODEL" "$HAS_PERSONA" >> "$WORKFLOW_FILE" 2>/dev/null
+
+# If no persona detected, log violation and warn
+if [ "$HAS_PERSONA" = "false" ]; then
+    # Truncate prompt for summary (first 100 chars)
+    SUMMARY=$(echo "$PROMPT" | head -c 100 2>/dev/null || echo "(unknown)")
+
+    python3 -c "
+import json, sys
+event = {
+    'ts': sys.argv[1],
+    'event': 'hook_violation',
+    'workflow_id': '',
+    'session': sys.argv[2],
+    'data': {
+        'type': 'missing_persona_template',
+        'tool_input_summary': sys.argv[3],
+        'reason': 'Agent dispatch missing persona template markers'
+    }
+}
+print(json.dumps(event, ensure_ascii=False))
+" "$TIMESTAMP" "$SESSION_ID" "$SUMMARY" >> "$WORKFLOW_FILE" 2>/dev/null
+
+    echo "WARNING: Stellar Powers - Agent dispatch without persona template detected. Description: ${DESCRIPTION}" >&2
+fi
+
+exit 0
