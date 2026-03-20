@@ -1,13 +1,12 @@
 {
-  "name": "superpowers",
-  "description": "Core skills library for Claude Code: TDD, debugging, collaboration patterns, and proven techniques",
+  "name": "stellar-powers",
+  "description": "Enhanced skills library for Claude Code with multi-persona subagent dispatch: TDD, debugging, collaboration patterns, and proven techniques",
   "version": "5.0.5",
   "author": {
-    "name": "Jesse Vincent",
-    "email": "jesse@fsck.com"
+    "name": "Rohit Sharma"
   },
-  "homepage": "https://github.com/obra/superpowers",
-  "repository": "https://github.com/obra/superpowers",
+  "homepage": "https://github.com/Interstellar-code/stellar-powers",
+  "repository": "https://github.com/Interstellar-code/stellar-powers",
   "license": "MIT",
-  "keywords": ["skills", "tdd", "debugging", "collaboration", "best-practices", "workflows"]
+  "keywords": ["skills", "tdd", "debugging", "collaboration", "best-practices", "workflows", "personas", "multi-agent"]
 }

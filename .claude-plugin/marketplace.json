@@ -1,19 +1,17 @@
 {
-  "name": "superpowers-dev",
-  "description": "Development marketplace for Superpowers core skills library",
+  "name": "stellar-powers",
+  "description": "Enhanced skills library for Claude Code with multi-persona subagent dispatch",
   "owner": {
-    "name": "Jesse Vincent",
-    "email": "jesse@fsck.com"
+    "name": "Rohit Sharma"
   },
   "plugins": [
     {
-      "name": "superpowers",
-      "description": "Core skills library for Claude Code: TDD, debugging, collaboration patterns, and proven techniques",
+      "name": "stellar-powers",
+      "description": "Enhanced skills library for Claude Code with multi-persona subagent dispatch: TDD, debugging, collaboration patterns, and proven techniques",
       "version": "5.0.5",
       "source": "./",
       "author": {
-        "name": "Jesse Vincent",
-        "email": "jesse@fsck.com"
+        "name": "Rohit Sharma"
       }
     }
   ]
