@@ -113,3 +113,14 @@ The skill itself tells you which.
 ## User Instructions
 
 Instructions say WHAT, not HOW. "Add X" or "Fix Y" doesn't mean skip workflows.
+
+## Workflow Commands
+
+**Abandon workflow:** When the user says "abandon workflow [workflow_id]", append an abandonment event:
+
+```bash
+mkdir -p .stellar-powers
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"workflow_abandoned\",\"workflow_id\":\"WORKFLOW_ID\",\"session\":\"\",\"data\":{\"reason\":\"user requested\"}}" >> .stellar-powers/workflow.jsonl
+```
+
+Replace `WORKFLOW_ID` with the ID provided by the user. Confirm: "Workflow [id] abandoned. It won't appear in future session summaries."
