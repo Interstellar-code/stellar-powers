@@ -2,7 +2,8 @@
   "name": "stellar-powers",
   "description": "Enhanced skills library for Claude Code with multi-persona subagent dispatch",
   "owner": {
-    "name": "Rohit Sharma"
+    "name": "Rohit Sharma",
+    "email": "rohit@interstellarconsulting.com"
   },
   "plugins": [
     {
@@ -11,7 +12,8 @@
       "version": "5.0.5",
       "source": "./",
       "author": {
-        "name": "Rohit Sharma"
+        "name": "Rohit Sharma",
+        "email": "rohit@interstellarconsulting.com"
       }
     }
   ]
