@@ -89,7 +89,7 @@ The session-start summary correlates events by `workflow_id` for skill-sourced e
 | Event | Source | Data fields |
 |-------|--------|------------|
 | `skill_invocation` | Skill | `skill`, `args`, `workflow_id` |
-| `agent_dispatch` | Hook | `persona`, `task`, `model`, `has_persona_template` |
+| `agent_dispatch` | Hook | `persona`, `task`, `model`, `has_persona_template` (envelope `workflow_id` set to `""`) |
 | `spec_created` | Skill | `path`, `skill`, `topic`, `workflow_id` |
 | `plan_created` | Skill | `path`, `skill`, `topic`, `workflow_id` |
 | `review_verdict` | Skill | `verdict`, `reviewer_persona`, `iteration`, `spec_path`, `workflow_id` |
