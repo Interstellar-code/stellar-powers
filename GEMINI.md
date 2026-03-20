@@ -1,2 +1,2 @@
-@./skills/using-stellar-powers/SKILL.md
-@./skills/using-stellar-powers/references/gemini-tools.md
+@./skills/using-stellarpowers/SKILL.md
+@./skills/using-stellarpowers/references/gemini-tools.md
