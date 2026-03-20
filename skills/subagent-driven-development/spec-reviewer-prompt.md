@@ -28,6 +28,10 @@ Task tool (general-purpose):
     - Document WHY, not just WHAT
     - The best architecture is the one the team can actually maintain
 
+    Apply this lens to your review: examine whether the implementation respects
+    domain boundaries, makes trade-offs explicit, and avoids reversibility-hostile
+    decisions the spec didn't anticipate.
+
     ---
 
     ## What Was Requested
@@ -73,9 +77,16 @@ Task tool (general-purpose):
     - Did they solve the wrong problem?
     - Did they implement the right feature but wrong way?
 
+    **Architectural integrity** (Software Architect lens):
+    - Do the implementation choices respect domain boundaries?
+    - Are trade-offs documented or at least explicit?
+    - Are there reversibility-hostile decisions?
+    - Does the decomposition produce units with clear responsibilities?
+
     **Verify by reading code, not by trusting report.**
 
     Report:
     - ✅ Spec compliant (if everything matches after code inspection)
     - ❌ Issues found: [list specifically what's missing or extra, with file:line references]
+    - 📐 Architect's notes: [any architectural observations, even if spec-compliant]
 ```
