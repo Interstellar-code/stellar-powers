@@ -3,6 +3,18 @@ name: executing-plans
 description: Use when you have a written implementation plan to execute in a separate session with review checkpoints
 ---
 
+## Workflow Logging
+
+On invocation, generate a workflow ID and log:
+
+```bash
+WF_ID=$(uuidgen 2>/dev/null || python3 -c "import uuid; print(uuid.uuid4())")
+mkdir -p .stellar-powers
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"skill_invocation\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"skill\":\"executing-plans\",\"args\":\"\"}}" >> .stellar-powers/workflow.jsonl
+```
+
+Check `.stellar-powers/workflow.jsonl` for incomplete executing-plans workflows. If found, load the most recent workflow's context to inform your work. Do not re-prompt the user.
+
 # Executing Plans
 
 ## Overview
