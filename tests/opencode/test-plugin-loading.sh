@@ -40,12 +40,12 @@ else
     exit 1
 fi
 
-# Test 4: Check using-superpowers skill exists (critical for bootstrap)
-echo "Test 4: Checking using-superpowers skill (required for bootstrap)..."
-if [ -f "$HOME/.config/opencode/superpowers/skills/using-superpowers/SKILL.md" ]; then
-    echo "  [PASS] using-superpowers skill exists"
+# Test 4: Check using-stellar-powers skill exists (critical for bootstrap)
+echo "Test 4: Checking using-stellar-powers skill (required for bootstrap)..."
+if [ -f "$HOME/.config/opencode/stellar-powers/skills/using-stellar-powers/SKILL.md" ]; then
+    echo "  [PASS] using-stellar-powers skill exists"
 else
-    echo "  [FAIL] using-superpowers skill not found (required for bootstrap)"
+    echo "  [FAIL] using-stellar-powers skill not found (required for bootstrap)"
     exit 1
 fi
 

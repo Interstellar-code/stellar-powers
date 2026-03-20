@@ -15,7 +15,7 @@ if [ -d "$legacy_skills_dir" ]; then
 fi
 
 # Read using-stellar-powers content
-using_superpowers_content=$(cat "${PLUGIN_ROOT}/skills/using-superpowers/SKILL.md" 2>&1 || echo "Error reading using-stellar-powers skill")
+using_superpowers_content=$(cat "${PLUGIN_ROOT}/skills/using-stellar-powers/SKILL.md" 2>&1 || echo "Error reading using-stellar-powers skill")
 
 # Escape string for JSON embedding using bash parameter substitution.
 # Each ${s//old/new} is a single C-level pass - orders of magnitude

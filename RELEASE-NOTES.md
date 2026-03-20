@@ -1,5 +1,15 @@
 # Stellar Powers Release Notes
 
+## v1.0.3 (2026-03-20)
+
+### Fixes
+
+- **Renamed `using-superpowers` directory** to `using-stellar-powers` — fixes `/using-superpowers` showing in Claude Code command list
+- **Fixed session-start hook** — was still reading from old directory path
+- **Updated GEMINI.md, Codex docs, and test files** for directory rename
+
+---
+
 ## v1.0.2 (2026-03-20)
 
 ### Full Rebrand
