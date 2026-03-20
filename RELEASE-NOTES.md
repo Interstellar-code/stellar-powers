@@ -1,5 +1,20 @@
 # Stellar Powers Release Notes
 
+## v1.0.6 (2026-03-20)
+
+### Closed-Loop Workflow Tracking
+
+Persistent workflow tracking across Claude Code sessions with compliance enforcement.
+
+- **PostToolUse hook** — automatically logs every Agent dispatch to `.stellar-powers/workflow.jsonl`, detects missing persona templates, and warns on violations
+- **Session continuity** — enhanced session-start hook parses workflow.jsonl and surfaces incomplete work (unfinished specs, unapproved reviews, pending plans) at session start
+- **Skill-level logging** — brainstorming, writing-plans, requesting-code-review, executing-plans, and subagent-driven-development skills log semantic events (skill_invocation, spec_created, plan_created, review_verdict) with UUID correlation
+- **Workflow abandonment** — `abandon workflow [id]` command marks workflows as terminal
+- **Path migration** — specs and plans now live under `.stellar-powers/specs/` and `.stellar-powers/plans/` (migration notice shown for existing users)
+- **20 automated tests** covering hook behavior, session-start parsing, path migration, and manifest validation
+
+---
+
 ## v1.0.5 (2026-03-20)
 
 ### Critical Fix: Enforce persona template usage
