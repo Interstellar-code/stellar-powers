@@ -18,8 +18,10 @@ Three problems, one system:
 
 Hooks handle automatic, low-level logging and enforcement. Skills handle rich, semantic event logging at meaningful milestones. Each layer does what it's naturally suited for.
 
-- **Hooks log**: agent dispatches, persona violations, skill invocations, task state changes
-- **Skills log**: spec creation, review verdicts (with iteration count, reviewer persona, verdict)
+- **Hooks log**: agent dispatches, persona violations
+- **Skills log**: skill invocation (with workflow_id), spec/plan creation, review verdicts, workflow abandonment
+
+Note: Hook-based `skill_invocation` logging was considered but dropped. The `Skill` tool name needs verification against Claude Code's actual tool naming, and skills already log their own invocation with richer context (workflow_id, args). Avoiding duplicate events from both hook and skill layers.
 
 ## Directory Structure
 
@@ -35,9 +37,26 @@ In each user project where stellar-powers is active:
 - Committed to git by default; users can gitignore if preferred
 - Replaces `docs/stellar-powers/specs/` and `docs/stellar-powers/plans/` paths
 
+### Directory Initialization
+
+The `.stellar-powers/` directory and its subdirectories (`specs/`, `plans/`) are created by skills on first use. When a skill needs to write a spec, plan, or workflow event, it creates the directory structure if it doesn't exist:
+
+```
+mkdir -p .stellar-powers/specs .stellar-powers/plans
+```
+
+The `post-tool-use` hook also creates `.stellar-powers/` before writing to `workflow.jsonl` if it doesn't exist.
+
 ### Path Migration
 
 All skill templates that reference `docs/stellar-powers/specs/` or `docs/stellar-powers/plans/` are updated to `.stellar-powers/specs/` and `.stellar-powers/plans/` respectively.
+
+**Breaking change:** Existing users may have specs and plans at the old paths. The session-start hook checks for files at the old `docs/stellar-powers/` paths and, if found, injects a one-time migration notice:
+
+```
+Stellar Powers: Specs/plans path changed from docs/stellar-powers/ to .stellar-powers/.
+Found existing files at old path. Run: mv docs/stellar-powers/specs/* .stellar-powers/specs/ && mv docs/stellar-powers/plans/* .stellar-powers/plans/
+```
 
 ## Component 1: JSONL Event Registry
 
@@ -57,19 +76,27 @@ Every line in `workflow.jsonl` is a JSON object with a common envelope:
 
 ### Correlation
 
-The `workflow_id` field links related events across a workflow. A skill generates a UUID on invocation and passes it through to all subsequent events (spec creation, review verdicts, task changes). The hook generates a new UUID per Agent dispatch for events it logs independently. The session-start summary uses `workflow_id` to pair start/completion events reliably.
+The `workflow_id` field links related events across a workflow. Skills own the workflow_id lifecycle:
+
+1. On skill invocation, the skill instructs the agent to generate a UUID: `uuidgen` (macOS/Linux) or `python3 -c "import uuid; print(uuid.uuid4())"` as fallback
+2. The skill template instructs the agent to store this UUID in a shell variable and reuse it for all subsequent JSONL appends within that workflow (spec creation, review verdicts, etc.)
+3. Agent dispatches logged by the hook do NOT get their own workflow_id — they use an empty string. The hook cannot know which skill workflow triggered the dispatch. This is acceptable because the hook's primary job is compliance detection (persona presence), not workflow correlation.
+
+The session-start summary correlates events by `workflow_id` for skill-sourced events, and treats hook-sourced `agent_dispatch` events as standalone audit entries.
 
 ### Event Types
 
 | Event | Source | Data fields |
 |-------|--------|------------|
-| `skill_invocation` | Hook | `skill`, `args`, `workflow_id` |
-| `agent_dispatch` | Hook | `persona`, `task`, `model`, `has_persona_template`, `workflow_id` |
+| `skill_invocation` | Skill | `skill`, `args`, `workflow_id` |
+| `agent_dispatch` | Hook | `persona`, `task`, `model`, `has_persona_template` |
 | `spec_created` | Skill | `path`, `skill`, `topic`, `workflow_id` |
 | `plan_created` | Skill | `path`, `skill`, `topic`, `workflow_id` |
 | `review_verdict` | Skill | `verdict`, `reviewer_persona`, `iteration`, `spec_path`, `workflow_id` |
-| `task_state_change` | Hook | `task_id`, `subject`, `from_status`, `to_status`, `workflow_id` |
-| `hook_violation` | Hook | `type`, `tool_input_summary`, `reason`, `workflow_id` |
+| `workflow_abandoned` | Skill | `workflow_id`, `reason` |
+| `hook_violation` | Hook | `type`, `tool_input_summary`, `reason` |
+
+Note: `task_state_change` events were removed. The codebase uses `TodoWrite`/`TodoRead` (not `TaskCreate`/`TaskUpdate`), and these tools don't appear in Claude Code's hook matcher system. Task state is already visible in plan files.
 
 ### Staleness
 
@@ -83,12 +110,12 @@ Follows existing stellar-powers hook conventions: bash scripts invoked via `run-
 
 **File:** `hooks/post-tool-use`
 
-Added to `hooks/hooks.json` as a PostToolUse entry, following the existing pattern:
+Added to `hooks/hooks.json` as a PostToolUse entry. The matcher targets only the `Agent` tool — the only tool the hook needs to observe:
 
 ```json
 "PostToolUse": [
   {
-    "matcher": "Agent|Skill|TaskCreate|TaskUpdate",
+    "matcher": "Agent",
     "hooks": [
       {
         "type": "command",
@@ -102,18 +129,34 @@ Added to `hooks/hooks.json` as a PostToolUse entry, following the existing patte
 
 The hook receives event data as **JSON on stdin** (Claude Code's hook API contract), containing `session_id`, `cwd`, `hook_event_name`, `tool_name`, and `tool_input`.
 
-The hook reads stdin, parses JSON, and dispatches by `tool_name`:
+The hook reads stdin, parses JSON, and:
 
-- **Agent**: Append `agent_dispatch` event. Check `tool_input` for persona template markers (e.g. persona name patterns from the personas catalog). If missing, append `hook_violation` and print warning to stderr.
-- **Skill**: Append `skill_invocation` event.
-- **TaskCreate/TaskUpdate**: Append `task_state_change` event.
-- **All others**: No-op (fast exit).
+1. Creates `.stellar-powers/` in `cwd` if it doesn't exist
+2. Appends an `agent_dispatch` event to `workflow.jsonl`
+3. Checks `tool_input.prompt` for persona template markers (see Persona Detection below)
+4. If no markers found, appends `hook_violation` and prints warning to stderr
 
-Note: A **PreToolUse** hook could block persona-less dispatches (exit 2 = deny). However, this risks breaking legitimate non-persona Agent dispatches (e.g. Explore subagents). We start with PostToolUse (log + warn) and can upgrade to PreToolUse blocking later if needed.
+### Persona Detection Logic
+
+The hook checks `tool_input.prompt` (the Agent tool's prompt field) for the presence of persona template content. Detection uses a whitelist of marker strings extracted from the persona catalog:
+
+**Required marker:** The prompt must contain at least ONE of these strings (case-insensitive):
+- `"You are a"` followed by a persona role name (e.g. `"You are a Software Architect"`)
+- `"## Agent Persona Catalog"` (multi-persona template marker)
+- `"## Persona Summary"` or `"### Core:"` (single-persona template marker)
+
+**Exempt dispatches** (never flagged as violations):
+- `subagent_type` is `Explore` or `Plan` — these are codebase navigation agents, not persona-driven
+- `tool_input.prompt` contains `"spec document reviewer"` or `"code quality reviewer"` — these use the built-in reviewer templates
+
+The marker strings are defined as a bash array in the hook script and can be updated as personas evolve.
+
+Note: A **PreToolUse** hook could block persona-less dispatches (exit 2 = deny). However, this risks breaking legitimate non-persona Agent dispatches. We start with PostToolUse (log + warn) and can upgrade to PreToolUse blocking later if needed.
 
 ### Error Handling Policy
 
 All hooks follow **silent degradation**:
+- If `.stellar-powers/` doesn't exist: create it on first write
 - If `workflow.jsonl` is missing: create it on first write, skip reads silently
 - If `workflow.jsonl` is malformed/unreadable: skip parsing, log nothing, exit 0
 - If JSON parsing of stdin fails: exit 0 silently (do not block the tool call)
@@ -126,22 +169,38 @@ All hooks follow **silent degradation**:
 
 After the current using-stellarpowers context injection, the hook also:
 
-1. Checks if `.stellar-powers/workflow.jsonl` exists in the working directory (if not, skip silently)
-2. Parses recent events to identify incomplete work (if parse fails, skip silently):
-   - `skill_invocation` without a corresponding completion (spec created, review approved)
-   - `spec_created` without a subsequent `review_verdict(approved)`
-   - `task_state_change` to `in_progress` without a later `completed`
-3. Injects a summary into session context:
+1. Checks for old-path files at `docs/stellar-powers/specs/` or `docs/stellar-powers/plans/` — if found, inject migration notice
+2. Checks if `.stellar-powers/workflow.jsonl` exists in the working directory (if not, skip silently)
+3. Parses recent events to identify incomplete work (if parse fails, skip silently) using the completion rules table below
+4. Injects a summary into session context with the incomplete work and instructions
+
+#### Workflow Completion Rules
+
+The session-start hook uses these rules to determine if a workflow is incomplete:
+
+| Start event | Completed when | Example |
+|-------------|---------------|---------|
+| `skill_invocation` where `skill=brainstorming` | Same `workflow_id` has `review_verdict` with `verdict=approved` | Brainstorming started but spec not reviewed |
+| `skill_invocation` where `skill=writing-plans` | Same `workflow_id` has `plan_created` | Plan skill started but no plan written |
+| `spec_created` | Same `workflow_id` has `review_verdict` with `verdict=approved` | Spec written but not approved |
+| `plan_created` | Same `workflow_id` has a `skill_invocation` for `executing-plans` | Plan written but not started |
+| `workflow_abandoned` | Workflow is terminal — always complete | N/A |
+
+Workflows with a `workflow_abandoned` event are never surfaced as incomplete.
+
+#### Session-start output format
 
 ```
 Stellar Powers — Incomplete work detected:
-  - brainstorming: spec written (2026-03-18) but review not approved
+  - brainstorming [abc-123]: spec written (2026-03-18) but review not approved
     -> .stellar-powers/specs/2026-03-18-auth-redesign-design.md
-  - executing-plans: 3/7 tasks completed (2026-03-19)
-    -> .stellar-powers/plans/2026-03-19-auth-redesign.md
+  - writing-plans [def-456]: plan not yet written (2026-03-19)
 
-Resume, abandon, or start fresh?
+  To resume a workflow, invoke the relevant skill — it will pick up from workflow.jsonl.
+  To abandon, tell Claude: "abandon workflow [workflow_id]"
 ```
+
+The skill preamble does NOT re-ask "resume/abandon/start fresh?" — the session-start hook is the single point of contact for surfacing incomplete work. Skills only check workflow.jsonl to load context for an active workflow, not to prompt the user again.
 
 ### File Structure (plugin repo)
 
@@ -149,50 +208,62 @@ Resume, abandon, or start fresh?
 hooks/
 ├── hooks.json              # Updated: add PostToolUse entry
 ├── run-hook.cmd            # Existing polyglot wrapper (unchanged)
-├── session-start           # Enhanced with workflow summary
-└── post-tool-use           # New: event logging + persona enforcement
+├── session-start           # Enhanced with workflow summary + migration notice
+└── post-tool-use           # New: agent dispatch logging + persona enforcement
 ```
 
 ## Component 3: Skill Integration
 
 Skills add lightweight logging instructions at key milestones. No new infrastructure — skills instruct the agent to append a JSON line to `workflow.jsonl` using Bash at the appropriate moment.
 
+### UUID generation
+
+Skills include this instruction in their preamble:
+
+> Generate a workflow ID for this session: `WF_ID=$(uuidgen 2>/dev/null || python3 -c "import uuid; print(uuid.uuid4())")`
+> Use this `$WF_ID` value in all workflow.jsonl appends for this skill invocation.
+
 ### Per-skill changes
 
-| Skill | Logging added |
+| Skill | Events logged |
 |-------|--------------|
-| `brainstorming` | `spec_created` after writing spec |
-| `writing-plans` | `plan_created` after writing plan |
-| `requesting-code-review` | `review_verdict` after each review iteration |
-| `executing-plans` | `task_state_change` as plan items complete |
-| `subagent-driven-development` | `review_verdict` for spec/code reviews |
+| `brainstorming` | `skill_invocation` on entry, `spec_created` after writing spec |
+| `writing-plans` | `skill_invocation` on entry, `plan_created` after writing plan |
+| `requesting-code-review` | `skill_invocation` on entry, `review_verdict` after each review iteration |
+| `executing-plans` | `skill_invocation` on entry |
+| `subagent-driven-development` | `skill_invocation` on entry, `review_verdict` for spec/code reviews |
 
-Other skills get `skill_invocation` logging automatically via the PostToolUse hook — no template changes needed.
+### Workflow abandonment
 
-### Incomplete work detection (skill preamble)
+When a user says "abandon workflow [workflow_id]", any active skill (or a general instruction in using-stellarpowers) appends:
 
-Each skill that logs events gets a preamble instruction:
+```json
+{"ts":"...","event":"workflow_abandoned","workflow_id":"<id>","data":{"reason":"user requested"}}
+```
 
-> Before starting, check if `.stellar-powers/workflow.jsonl` exists. If it contains incomplete work related to this skill, present a summary and ask: "Resume, abandon, or start fresh?"
+This is documented in the using-stellarpowers skill so the agent knows how to handle the command regardless of which skill is active.
 
-This makes skills self-aware of prior session state.
+### Skill preamble (context loading, not prompting)
+
+Each instrumented skill gets a preamble:
+
+> On invocation, check if `.stellar-powers/workflow.jsonl` exists. If it contains events with the same skill name that are not yet completed (per the completion rules), load the most recent workflow's context (spec path, plan path, last event) to inform your work. Do not prompt the user — session-start already surfaced incomplete work at the top of this session.
 
 ## What Changes in the Plugin Repo
 
 ### New files
-- `hooks/post-tool-use` — PostToolUse hook script
+- `hooks/post-tool-use` — PostToolUse hook script for agent dispatch logging + persona enforcement
 
 ### Modified files
 - `hooks/hooks.json` — add PostToolUse entry
-- `hooks/session-start` — add workflow summary injection
-- `skills/brainstorming/SKILL.md` — add spec_created logging + preamble
-- `skills/writing-plans/SKILL.md` — add plan_created logging + preamble
-- `skills/requesting-code-review/SKILL.md` — add review_verdict logging + preamble
-- `skills/executing-plans/SKILL.md` — add task_state_change logging + preamble
-- `skills/subagent-driven-development/SKILL.md` — add review_verdict logging + preamble
-- `skills/brainstorming/spec-document-reviewer-prompt.md` — path update
-- `skills/requesting-code-review/SKILL.md` — path update
-- `skills/subagent-driven-development/SKILL.md` — path update
+- `hooks/session-start` — add workflow summary injection + old-path migration notice
+- `skills/brainstorming/SKILL.md` — add workflow logging (skill_invocation, spec_created) + preamble
+- `skills/brainstorming/spec-document-reviewer-prompt.md` — path update to `.stellar-powers/specs/`
+- `skills/writing-plans/SKILL.md` — add workflow logging (skill_invocation, plan_created) + preamble + path update
+- `skills/requesting-code-review/SKILL.md` — add workflow logging (skill_invocation, review_verdict) + preamble + path update
+- `skills/executing-plans/SKILL.md` — add workflow logging (skill_invocation) + preamble
+- `skills/subagent-driven-development/SKILL.md` — add workflow logging (skill_invocation, review_verdict) + preamble + path update
+- `skills/using-stellarpowers/SKILL.md` — add "abandon workflow" command documentation
 
 ### No changes
 - `run-hook.cmd` — unchanged
