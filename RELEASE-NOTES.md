@@ -1,5 +1,16 @@
 # Stellar Powers Release Notes
 
+## v1.0.2 (2026-03-20)
+
+### Full Rebrand
+
+- **All skill references rebranded** — every `superpowers:` prefix across all 14 SKILL.md files, cross-references, agents, hooks, and test files now uses `stellar-powers:`
+- **`using-superpowers` skill renamed** to `using-stellar-powers` in frontmatter
+- **PR template updated** to reference `stellar-powers:writing-skills`
+- **Test files updated** — all test assertions and prompts use `stellar-powers:` namespace
+
+---
+
 ## v1.0.1 (2026-03-20)
 
 ### Fixes
