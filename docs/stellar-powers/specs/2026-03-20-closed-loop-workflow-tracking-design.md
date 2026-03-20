@@ -69,7 +69,7 @@ The `workflow_id` field links related events across a workflow. A skill generate
 | `plan_created` | Skill | `path`, `skill`, `topic`, `workflow_id` |
 | `review_verdict` | Skill | `verdict`, `reviewer_persona`, `iteration`, `spec_path`, `workflow_id` |
 | `task_state_change` | Hook | `task_id`, `subject`, `from_status`, `to_status`, `workflow_id` |
-| `hook_violation` | Hook | `type`, `tool_input_summary`, `reason` |
+| `hook_violation` | Hook | `type`, `tool_input_summary`, `reason`, `workflow_id` |
 
 ### Staleness
 
@@ -83,7 +83,24 @@ Follows existing stellar-powers hook conventions: bash scripts invoked via `run-
 
 **File:** `hooks/post-tool-use`
 
-Added to `hooks/hooks.json` as a PostToolUse entry. The hook receives event data as **JSON on stdin** (Claude Code's hook API contract), containing `session_id`, `cwd`, `hook_event_name`, `tool_name`, and `tool_input`.
+Added to `hooks/hooks.json` as a PostToolUse entry, following the existing pattern:
+
+```json
+"PostToolUse": [
+  {
+    "matcher": "Agent|Skill|TaskCreate|TaskUpdate",
+    "hooks": [
+      {
+        "type": "command",
+        "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" post-tool-use",
+        "async": true
+      }
+    ]
+  }
+]
+```
+
+The hook receives event data as **JSON on stdin** (Claude Code's hook API contract), containing `session_id`, `cwd`, `hook_event_name`, `tool_name`, and `tool_input`.
 
 The hook reads stdin, parses JSON, and dispatches by `tool_name`:
 
@@ -169,7 +186,7 @@ This makes skills self-aware of prior session state.
 - `hooks/hooks.json` — add PostToolUse entry
 - `hooks/session-start` — add workflow summary injection
 - `skills/brainstorming/SKILL.md` — add spec_created logging + preamble
-- `skills/writing-plans/SKILL.md` — add spec_created logging + preamble
+- `skills/writing-plans/SKILL.md` — add plan_created logging + preamble
 - `skills/requesting-code-review/SKILL.md` — add review_verdict logging + preamble
 - `skills/executing-plans/SKILL.md` — add task_state_change logging + preamble
 - `skills/subagent-driven-development/SKILL.md` — add review_verdict logging + preamble
