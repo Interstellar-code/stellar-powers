@@ -78,6 +78,45 @@ This structure informs the task decomposition. Each task should produce self-con
 ---
 ```
 
+## Library Doc Verification (Context7)
+
+After writing the plan header (Goal, Architecture, Tech Stack), verify library APIs before writing task code blocks.
+
+For the top 3-5 libraries in the Tech Stack header (skip utility libs like lodash/zod and private `@org/` scoped packages), fetch current documentation. Set `QUERY` to the specific API topic relevant to the task (e.g., `"app router"` for Next.js routing, `"webhooks"` for Stripe — never just the library name):
+
+```bash
+# For each key library (e.g., LIBRARY="nextjs", QUERY="app router")
+LIB_ID=$(curl -s --max-time 10 "https://context7.com/api/v2/libs/search?libraryName=${LIBRARY}" \
+  -H "Authorization: Bearer $CONTEXT7_API_KEY" \
+  | python3 -c "import sys,json; r=json.load(sys.stdin).get('results',[]); print(max(r, key=lambda x: x.get('trustScore',0))['id'] if r else '')" 2>/dev/null)
+
+if [ -n "$LIB_ID" ]; then
+  curl -s --max-time 10 "https://context7.com/api/v2/context?libraryId=${LIB_ID}&query=${QUERY}&tokens=5000&type=txt" \
+    -H "Authorization: Bearer $CONTEXT7_API_KEY" 2>/dev/null
+fi
+```
+
+**Version awareness:** Check if the project's pinned version (from `package.json` or lock file) matches the docs version. If there's a major version mismatch, note it and use docs conservatively — don't "correct" patterns to a version the project doesn't use.
+
+Use the fetched docs to verify API patterns before writing inline code examples in tasks. If a pattern differs from the current docs, use the current version.
+
+Add a `## Library References` appendix at the bottom of every plan:
+
+```markdown
+## Library References
+
+> Verified via Context7 on {date}. Use these as authoritative API reference.
+
+### {Library} (resolved: {libraryId}, project version: {version})
+- {key pattern 1}
+- {key pattern 2}
+- {key pattern 3}
+```
+
+Max ~200 tokens per library entry. Summarize 3-5 key API patterns relevant to the task.
+
+**If `CONTEXT7_API_KEY` is not set:** Note "Context7 API key not configured — proceeding without library doc verification." and continue. Never block on API errors.
+
 ## Task Structure
 
 ````markdown
