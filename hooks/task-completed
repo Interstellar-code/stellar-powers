@@ -21,7 +21,7 @@ if os.path.exists(config_path):
     try:
         if not json.load(open(config_path)).get("feedback_enabled", True):
             sys.exit(0)
-    except:
+    except Exception:
         pass
 
 aw_path = os.path.join(cwd, ".stellar-powers", ".active-workflow")

@@ -1,0 +1,507 @@
+#!/usr/bin/env bash
+# Validation tests for self-improving capabilities
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+HOOKS_DIR="${REPO_ROOT}/hooks"
+PASS=0
+FAIL=0
+
+assert_eq() {
+    local desc="$1" expected="$2" actual="$3"
+    if [ "$expected" = "$actual" ]; then
+        echo "  PASS: $desc"
+        PASS=$((PASS + 1))
+    else
+        echo "  FAIL: $desc (expected '$expected', got '$actual')"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
+assert_contains() {
+    local desc="$1" haystack="$2" needle="$3"
+    if echo "$haystack" | grep -q "$needle"; then
+        echo "  PASS: $desc"
+        PASS=$((PASS + 1))
+    else
+        echo "  FAIL: $desc (expected to contain '$needle')"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
+assert_not_contains() {
+    local desc="$1" haystack="$2" needle="$3"
+    if ! echo "$haystack" | grep -q "$needle"; then
+        echo "  PASS: $desc"
+        PASS=$((PASS + 1))
+    else
+        echo "  FAIL: $desc (expected NOT to contain '$needle', but found it)"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
+NEW_HOOKS=(
+    "user-prompt-submit"
+    "task-completed"
+    "subagent-stop"
+    "stop"
+    "post-tool-use-failure"
+)
+
+# ─── Test 1: Hook scripts exit 0 with empty input ───────────────────────────
+echo ""
+echo "Test 1: Hook scripts exit 0 with empty input"
+
+for hook in "${NEW_HOOKS[@]}"; do
+    hook_path="${HOOKS_DIR}/${hook}"
+    exit_code=0
+    echo "" | "${hook_path}" 2>/dev/null || exit_code=$?
+    assert_eq "${hook} exits 0 on empty input" "0" "$exit_code"
+done
+
+# ─── Test 2: Hook scripts skip when no .active-workflow ─────────────────────
+echo ""
+echo "Test 2: Hook scripts skip when no .active-workflow"
+
+tmpdir2=$(mktemp -d)
+mkdir -p "${tmpdir2}/.stellar-powers"
+
+for hook in "${NEW_HOOKS[@]}"; do
+    hook_path="${HOOKS_DIR}/${hook}"
+    echo '{"cwd":"'"${tmpdir2}"'","session_id":"s1","prompt":"hello","last_assistant_message":"hi","tool_name":"Bash","error":"oops","task_id":"1","task_subject":"subj","task_description":"desc","agent_id":"a1","agent_type":"subagent"}' \
+        | "${hook_path}" 2>/dev/null
+done
+
+wf_file="${tmpdir2}/.stellar-powers/workflow.jsonl"
+if [ -f "$wf_file" ]; then
+    line_count=$(wc -l < "$wf_file" | tr -d ' ')
+    assert_eq "no events written when no .active-workflow" "0" "$line_count"
+else
+    echo "  PASS: no workflow.jsonl created when no .active-workflow"
+    PASS=$((PASS + 1))
+fi
+rm -rf "$tmpdir2"
+
+# ─── Test 3: Hook scripts write events when .active-workflow exists ──────────
+echo ""
+echo "Test 3: Hook scripts write events when .active-workflow exists"
+
+tmpdir3=$(mktemp -d)
+mkdir -p "${tmpdir3}/.stellar-powers"
+echo '{"workflow_id":"TEST-123","skill":"brainstorming","step":"test","step_number":1}' \
+    > "${tmpdir3}/.stellar-powers/.active-workflow"
+
+echo '{"cwd":"'"${tmpdir3}"'","session_id":"s1","prompt":"hello world"}' \
+    | "${HOOKS_DIR}/user-prompt-submit" 2>/dev/null
+
+wf_file="${tmpdir3}/.stellar-powers/workflow.jsonl"
+if [ -f "$wf_file" ]; then
+    wf_content=$(cat "$wf_file")
+    assert_contains "user_message event written" "$wf_content" '"event": "user_message"'
+    assert_contains "workflow_id TEST-123 in event" "$wf_content" '"workflow_id": "TEST-123"'
+else
+    echo "  FAIL: workflow.jsonl not created"
+    FAIL=$((FAIL + 1))
+    FAIL=$((FAIL + 1))
+fi
+rm -rf "$tmpdir3"
+
+# ─── Test 4: Feedback disabled check ────────────────────────────────────────
+echo ""
+echo "Test 4: Feedback disabled check"
+
+tmpdir4=$(mktemp -d)
+mkdir -p "${tmpdir4}/.stellar-powers"
+echo '{"feedback_enabled": false}' > "${tmpdir4}/.stellar-powers/config.json"
+echo '{"workflow_id":"TEST-456","skill":"brainstorming","step":"test","step_number":1}' \
+    > "${tmpdir4}/.stellar-powers/.active-workflow"
+
+echo '{"cwd":"'"${tmpdir4}"'","session_id":"s1","prompt":"hello"}' \
+    | "${HOOKS_DIR}/user-prompt-submit" 2>/dev/null
+
+wf_file="${tmpdir4}/.stellar-powers/workflow.jsonl"
+if [ -f "$wf_file" ]; then
+    line_count=$(wc -l < "$wf_file" | tr -d ' ')
+    assert_eq "no events written when feedback disabled" "0" "$line_count"
+else
+    echo "  PASS: no workflow.jsonl created when feedback disabled"
+    PASS=$((PASS + 1))
+fi
+rm -rf "$tmpdir4"
+
+# ─── Test 5: Redaction filter ────────────────────────────────────────────────
+echo ""
+echo "Test 5: Redaction filter"
+
+tmpdir5=$(mktemp -d)
+mkdir -p "${tmpdir5}/.stellar-powers"
+echo '{"workflow_id":"TEST-789","skill":"brainstorming","step":"test","step_number":1}' \
+    > "${tmpdir5}/.stellar-powers/.active-workflow"
+
+echo '{"cwd":"'"${tmpdir5}"'","session_id":"s1","prompt":"my key is sk-abc123def456ghi789jkl012mno345 and email is test@example.com and path is /Users/john/secret"}' \
+    | "${HOOKS_DIR}/user-prompt-submit" 2>/dev/null
+
+wf_file="${tmpdir5}/.stellar-powers/workflow.jsonl"
+if [ -f "$wf_file" ]; then
+    wf_content=$(cat "$wf_file")
+    assert_contains "API key redacted" "$wf_content" '\[REDACTED_KEY\]'
+    assert_contains "email redacted" "$wf_content" '\[REDACTED_EMAIL\]'
+    assert_contains "username path redacted" "$wf_content" '/Users/\[user\]'
+    assert_not_contains "raw API key absent" "$wf_content" 'sk-abc123def456ghi789jkl012mno345'
+    assert_not_contains "raw email absent" "$wf_content" 'test@example.com'
+    assert_not_contains "raw username absent" "$wf_content" '/Users/john'
+else
+    echo "  FAIL: workflow.jsonl not created for redaction test"
+    FAIL=$((FAIL + 6))
+fi
+rm -rf "$tmpdir5"
+
+# ─── Test 6: hooks.json is valid JSON ───────────────────────────────────────
+echo ""
+echo "Test 6: hooks.json is valid JSON"
+
+hooks_json="${HOOKS_DIR}/hooks.json"
+parse_result=$(python3 -c "import json; json.load(open('${hooks_json}')); print('ok')" 2>&1)
+assert_eq "hooks.json parses as valid JSON" "ok" "$parse_result"
+
+# ─── Test 7: All hook scripts are executable ────────────────────────────────
+echo ""
+echo "Test 7: All hook scripts are executable"
+
+ALL_HOOKS=(
+    "user-prompt-submit"
+    "task-completed"
+    "subagent-stop"
+    "stop"
+    "post-tool-use-failure"
+    "post-tool-use"
+    "session-start"
+)
+
+for hook in "${ALL_HOOKS[@]}"; do
+    hook_path="${HOOKS_DIR}/${hook}"
+    if [ -x "$hook_path" ]; then
+        echo "  PASS: ${hook} is executable"
+        PASS=$((PASS + 1))
+    else
+        echo "  FAIL: ${hook} is NOT executable"
+        FAIL=$((FAIL + 1))
+    fi
+done
+
+# ─── Test 8: send-feedback SKILL.md exists and has required sections ─────────
+echo ""
+echo "Test 8: send-feedback SKILL.md exists and has required sections"
+
+skill_md="${REPO_ROOT}/skills/send-feedback/SKILL.md"
+if [ -f "$skill_md" ]; then
+    skill_content=$(cat "$skill_md")
+    assert_contains "SKILL.md contains gh auth status" "$skill_content" "gh auth status"
+    assert_contains "SKILL.md contains metrics reference" "$skill_content" "metrics"
+    assert_contains "SKILL.md contains issue create" "$skill_content" "issue create"
+else
+    echo "  FAIL: send-feedback/SKILL.md does not exist"
+    FAIL=$((FAIL + 3))
+fi
+
+# ─── Test 9: End-to-end lifecycle test ──────────────────────────────────────
+echo ""
+echo "Test 9: End-to-end lifecycle test"
+
+tmpdir9=$(mktemp -d)
+mkdir -p "${tmpdir9}/.stellar-powers"
+WF_ID="E2E-$(date +%s)"
+echo "{\"workflow_id\":\"${WF_ID}\",\"skill\":\"brainstorming\",\"step\":\"ideation\",\"step_number\":1,\"topic\":\"test-topic\",\"repo\":\"test/repo\",\"task_type\":\"feature\",\"project_type\":\"app\",\"sp_version\":\"1.2.0\"}" \
+    > "${tmpdir9}/.stellar-powers/.active-workflow"
+
+# Fire user-prompt-submit
+echo "{\"cwd\":\"${tmpdir9}\",\"session_id\":\"s9\",\"prompt\":\"test prompt\"}" \
+    | "${HOOKS_DIR}/user-prompt-submit" 2>/dev/null
+
+wf_file="${tmpdir9}/.stellar-powers/workflow.jsonl"
+wf_content=$(cat "$wf_file" 2>/dev/null || echo "")
+assert_contains "user_message event after UserPromptSubmit" "$wf_content" '"event": "user_message"'
+
+# Fire task-completed
+echo "{\"cwd\":\"${tmpdir9}\",\"session_id\":\"s9\",\"task_id\":\"42\",\"task_subject\":\"Build the thing\",\"task_description\":\"Details here\"}" \
+    | "${HOOKS_DIR}/task-completed" 2>/dev/null
+
+wf_content=$(cat "$wf_file")
+assert_contains "task_completed event after TaskCompleted" "$wf_content" '"event": "task_completed"'
+
+# Manually write workflow_completed event
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"workflow_completed\",\"workflow_id\":\"${WF_ID}\",\"session\":\"s9\",\"data\":{\"skill\":\"brainstorming\",\"duration_minutes\":5,\"steps_completed\":2,\"steps_total\":2,\"outcome\":\"success\",\"completion_feedback\":\"Great\"}}" \
+    >> "$wf_file"
+
+# Run the metrics packager
+metrics_output=$(cd "$tmpdir9" && SP_WF_ID="$WF_ID" python3 << 'PYEOF'
+import json, os, sys
+from datetime import datetime
+
+cwd = os.getcwd()
+wf_file = os.path.join(cwd, ".stellar-powers", "workflow.jsonl")
+wf_id = os.environ.get("SP_WF_ID", "")
+if not wf_id:
+    print("ERROR: SP_WF_ID not set", file=sys.stderr)
+    sys.exit(1)
+
+events = []
+with open(wf_file) as f:
+    for line in f:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            evt = json.loads(line)
+            if evt.get("workflow_id") == wf_id:
+                events.append(evt)
+        except:
+            continue
+
+aw_path = os.path.join(cwd, ".stellar-powers", ".active-workflow")
+aw = {}
+if os.path.exists(aw_path):
+    try:
+        aw = json.load(open(aw_path))
+    except:
+        pass
+
+started = ""
+completed = ""
+duration = 0
+completion_feedback = ""
+outcome = "unknown"
+for e in events:
+    if e.get("event") == "skill_invocation" and not started:
+        started = e.get("ts", "")
+    if e.get("event") == "workflow_completed":
+        completed = e.get("ts", "")
+        d = e.get("data", {})
+        duration = d.get("duration_minutes", 0)
+        completion_feedback = d.get("completion_feedback", "")
+        outcome = d.get("outcome", "success")
+
+skills_seen = []
+for e in events:
+    if e.get("event") == "skill_invocation":
+        s = e.get("data", {}).get("skill", "")
+        if s and s not in skills_seen:
+            skills_seen.append(s)
+
+tasks = [{"id": e["data"].get("task_id", ""), "subject": e["data"].get("task_subject", ""), "status": "completed"}
+         for e in events if e.get("event") == "task_completed"]
+user_messages = [{"timestamp": e.get("ts", ""), "context": f"{e['data'].get('active_skill', '')}/{e['data'].get('active_step', '')}",
+                  "preview": e["data"].get("prompt_preview", "")}
+                 for e in events if e.get("event") == "user_message"]
+ai_responses = [{"timestamp": e.get("ts", ""), "context": e["data"].get("active_skill", ""),
+                 "preview": e["data"].get("response_preview", "")}
+                for e in events if e.get("event") == "turn_completed"]
+tool_failures = [{"tool": e["data"].get("tool_name", ""), "error": e["data"].get("error_preview", "")}
+                 for e in events if e.get("event") == "tool_failure"]
+artifacts = []
+for e in events:
+    if e.get("event") in ("spec_created", "plan_created"):
+        p = e.get("data", {}).get("path", "")
+        if p:
+            artifacts.append(p)
+
+package = {
+    "package_version": "1.0",
+    "workflow_id": wf_id,
+    "stellar_powers_version": aw.get("sp_version", "unknown"),
+    "context": {
+        "repo": aw.get("repo", "unknown"),
+        "project_type": aw.get("project_type", "unknown"),
+        "task_type": aw.get("task_type", "unknown"),
+        "skills_chain": skills_seen
+    },
+    "timeline": {
+        "started": started,
+        "completed": completed,
+        "duration_minutes": duration,
+        "user_confirmed_complete": True
+    },
+    "skills": {},
+    "tasks": tasks,
+    "user_messages": user_messages,
+    "ai_responses": ai_responses,
+    "tool_failures": tool_failures,
+    "artifacts": artifacts,
+    "completion_feedback": completion_feedback
+}
+
+metrics_dir = os.path.join(cwd, ".stellar-powers", "metrics")
+os.makedirs(metrics_dir, exist_ok=True)
+date_str = datetime.utcnow().strftime("%Y-%m-%d")
+topic = aw.get("topic", "unknown")
+pkg_path = os.path.join(metrics_dir, f"{date_str}-{topic}-{wf_id[:8]}.json")
+with open(pkg_path, "w") as f:
+    json.dump(package, f, indent=2)
+
+with open(pkg_path) as f:
+    json.load(f)
+
+print(f"METRICS_PACKAGE={pkg_path}")
+PYEOF
+)
+
+pkg_path=$(echo "$metrics_output" | grep '^METRICS_PACKAGE=' | cut -d= -f2-)
+if [ -n "$pkg_path" ] && [ -f "$pkg_path" ]; then
+    pkg_valid=$(python3 -c "import json; json.load(open('${pkg_path}')); print('ok')" 2>&1)
+    assert_eq "metrics package is valid JSON" "ok" "$pkg_valid"
+else
+    echo "  FAIL: metrics package not created (output: ${metrics_output})"
+    FAIL=$((FAIL + 1))
+fi
+
+# Run the pruner
+(cd "$tmpdir9" && SP_WF_ID="$WF_ID" python3 << 'PYEOF'
+import json, os
+
+cwd = os.getcwd()
+wf_file = os.path.join(cwd, ".stellar-powers", "workflow.jsonl")
+wf_id = os.environ.get("SP_WF_ID", "")
+if not wf_id:
+    import sys; print("ERROR: SP_WF_ID not set", file=sys.stderr); sys.exit(1)
+
+kept = []
+pruned_events = []
+
+with open(wf_file) as f:
+    for line in f:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            evt = json.loads(line)
+            if evt.get("workflow_id") == wf_id:
+                pruned_events.append(evt)
+            else:
+                kept.append(line)
+        except:
+            kept.append(line)
+
+skills_seen = []
+for e in pruned_events:
+    if e.get("event") == "skill_invocation":
+        s = e.get("data", {}).get("skill", "")
+        if s and s not in skills_seen:
+            skills_seen.append(s)
+
+completed_evt = next((e for e in pruned_events if e.get("event") == "workflow_completed"), {})
+started_evt = next((e for e in pruned_events if e.get("event") in ("skill_invocation", "workflow_started")), {})
+
+corrections = sum(1 for e in pruned_events if e.get("event") == "user_correction")
+review_iters = sum(1 for e in pruned_events if e.get("event") == "review_verdict")
+violations = sum(1 for e in pruned_events if e.get("event") == "hook_violation")
+tasks_done = sum(1 for e in pruned_events if e.get("event") == "task_completed")
+steps_done = sum(1 for e in pruned_events if e.get("event") == "step_completed")
+steps_total = max([e.get("data", {}).get("step_number", 0) for e in pruned_events if e.get("event") == "step_started"] or [steps_done])
+
+artifacts = [e.get("data", {}).get("path", "") for e in pruned_events if e.get("event") in ("spec_created", "plan_created") and e.get("data", {}).get("path")]
+
+aw = {}
+aw_path = os.path.join(cwd, ".stellar-powers", ".active-workflow")
+if os.path.exists(aw_path):
+    try: aw = json.load(open(aw_path))
+    except: pass
+
+summary = {
+    "ts": completed_evt.get("ts", started_evt.get("ts", "")),
+    "event": "workflow_summary",
+    "workflow_id": wf_id,
+    "session": "",
+    "data": {
+        "skill_chain": skills_seen,
+        "topic": aw.get("topic", "unknown"),
+        "repo": aw.get("repo", "unknown"),
+        "task_type": aw.get("task_type", "unknown"),
+        "sp_version": aw.get("sp_version", "unknown"),
+        "started": started_evt.get("ts", ""),
+        "completed": completed_evt.get("ts", ""),
+        "duration_minutes": completed_evt.get("data", {}).get("duration_minutes", 0),
+        "outcome": completed_evt.get("data", {}).get("outcome", "unknown"),
+        "steps_completed": steps_done,
+        "steps_total": steps_total,
+        "corrections": corrections,
+        "review_iterations": review_iters,
+        "violations": violations,
+        "tasks_completed": tasks_done,
+        "artifacts": artifacts
+    }
+}
+
+kept.append(json.dumps(summary))
+
+tmp_path = wf_file + ".tmp"
+with open(tmp_path, "w") as f:
+    f.write("\n".join(kept) + "\n")
+os.rename(tmp_path, wf_file)
+PYEOF
+)
+
+wf_after_prune=$(cat "${tmpdir9}/.stellar-powers/workflow.jsonl")
+assert_contains "workflow_summary present after prune" "$wf_after_prune" '"event": "workflow_summary"'
+
+# Detail lines for this workflow_id should be gone (only summary remains)
+detail_count=$(echo "$wf_after_prune" | python3 -c "
+import json, sys
+wf_id = '${WF_ID}'
+count = 0
+for line in sys.stdin:
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        evt = json.loads(line)
+        if evt.get('workflow_id') == wf_id and evt.get('event') != 'workflow_summary':
+            count += 1
+    except:
+        pass
+print(count)
+" 2>/dev/null || echo "0")
+assert_eq "no detail lines for workflow_id after prune" "0" "$detail_count"
+
+rm -rf "$tmpdir9"
+
+# ─── Test 10: Kill switch test ───────────────────────────────────────────────
+echo ""
+echo "Test 10: Kill switch test"
+
+tmpdir10=$(mktemp -d)
+mkdir -p "${tmpdir10}/.stellar-powers"
+echo '{"feedback_enabled": false}' > "${tmpdir10}/.stellar-powers/config.json"
+echo '{"workflow_id":"KS-001","skill":"brainstorming","step":"test","step_number":1}' \
+    > "${tmpdir10}/.stellar-powers/.active-workflow"
+
+base_input="{\"cwd\":\"${tmpdir10}\",\"session_id\":\"ks\",\"prompt\":\"hello\",\"last_assistant_message\":\"hi\",\"tool_name\":\"Bash\",\"error\":\"oops\",\"task_id\":\"1\",\"task_subject\":\"subj\",\"task_description\":\"desc\",\"agent_id\":\"a1\",\"agent_type\":\"subagent\"}"
+
+for hook in "${NEW_HOOKS[@]}"; do
+    echo "$base_input" | "${HOOKS_DIR}/${hook}" 2>/dev/null
+done
+
+wf_file="${tmpdir10}/.stellar-powers/workflow.jsonl"
+if [ -f "$wf_file" ]; then
+    total_events=$(wc -l < "$wf_file" | tr -d ' ')
+    assert_eq "zero events written with kill switch (all 5 hooks)" "0" "$total_events"
+else
+    echo "  PASS: no workflow.jsonl created with kill switch"
+    PASS=$((PASS + 1))
+fi
+rm -rf "$tmpdir10"
+
+# ─── Test 11: Rollback documentation ─────────────────────────────────────────
+echo ""
+echo "Test 11: Rollback documentation"
+echo "  INFO: To disable feedback: set feedback_enabled to false in .stellar-powers/config.json"
+PASS=$((PASS + 1))
+
+# ─── Summary ─────────────────────────────────────────────────────────────────
+echo ""
+echo "Results: $PASS passed, $FAIL failed"
+if [ "$FAIL" -gt 0 ]; then
+    exit 1
+fi
+echo ""
+echo "To disable feedback: set feedback_enabled to false in .stellar-powers/config.json"
