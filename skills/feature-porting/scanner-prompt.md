@@ -135,6 +135,25 @@ Use these tests to determine if something is feature-owned or shared:
 3. **Naming test:** Generic names (`NotificationService`, `FileUploader`, `BaseRepository`) are likely shared
 4. **When uncertain:** Log it in the "Shared Dependencies" section with a note explaining the ambiguity. Let the user decide during approval. Do NOT include uncertain items in the main mapping.
 
+## Phase 4.5: API Currency Check (Context7)
+
+For key source libraries identified in the Source Stack Summary (auth, payments, ORM, state management — max 5, skip utility libs and private `@org/` packages), check whether the patterns extracted in Phase 2 reflect current API conventions. Set `QUERY` to the specific pattern or method being checked:
+
+```bash
+LIB_ID=$(curl -s --max-time 10 "https://context7.com/api/v2/libs/search?libraryName=${LIBRARY}" \
+  -H "Authorization: Bearer $CONTEXT7_API_KEY" \
+  | python3 -c "import sys,json; r=json.load(sys.stdin).get('results',[]); print(max(r, key=lambda x: x.get('trustScore',0))['id'] if r else '')" 2>/dev/null)
+
+if [ -n "$LIB_ID" ]; then
+  curl -s --max-time 10 "https://context7.com/api/v2/context?libraryId=${LIB_ID}&query=${QUERY}&tokens=5000&type=txt" \
+    -H "Authorization: Bearer $CONTEXT7_API_KEY" 2>/dev/null
+fi
+```
+
+If source patterns are deprecated according to current docs, add `Port Risk: Stale API` to the Adaptation Notes column of the mapping table with a note: "Source uses {old pattern}, current docs show {new pattern}."
+
+If `CONTEXT7_API_KEY` is not set, skip this phase entirely.
+
 ## Phase 5: Save Report
 
 Save the complete report to `{{REPORT_PATH}}`.
