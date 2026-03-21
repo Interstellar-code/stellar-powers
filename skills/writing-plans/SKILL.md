@@ -62,6 +62,63 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"step_completed\",\"
 
 Check `.stellar-powers/workflow.jsonl` for incomplete writing-plans workflows. If found, load the most recent workflow's context to inform your work. Do not re-prompt the user.
 
+**Step tracking** — After each major phase, update .active-workflow with the current step:
+
+After reading and understanding the spec:
+```bash
+python3 -c "
+import json
+aw = json.load(open('.stellar-powers/.active-workflow'))
+aw['step'] = 'reading_spec'
+aw['step_number'] = 1
+json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
+" && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+```
+
+After library verification (Context7):
+```bash
+python3 -c "
+import json
+aw = json.load(open('.stellar-powers/.active-workflow'))
+aw['step'] = 'library_verification'
+aw['step_number'] = 2
+json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
+" && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+```
+
+After writing all tasks:
+```bash
+python3 -c "
+import json
+aw = json.load(open('.stellar-powers/.active-workflow'))
+aw['step'] = 'writing_tasks'
+aw['step_number'] = 3
+json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
+" && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+```
+
+After plan review loop completes:
+```bash
+python3 -c "
+import json
+aw = json.load(open('.stellar-powers/.active-workflow'))
+aw['step'] = 'plan_review'
+aw['step_number'] = 4
+json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
+" && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+```
+
+Before execution handoff:
+```bash
+python3 -c "
+import json
+aw = json.load(open('.stellar-powers/.active-workflow'))
+aw['step'] = 'execution_handoff'
+aw['step_number'] = 5
+json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
+" && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+```
+
 After saving the plan, log plan creation:
 
 ```bash
@@ -239,6 +296,54 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"user_correction\",\
 Replace `GATE_NAME` with e.g. `plan_review` or `execution_choice`, and `FIRST_200_CHARS_OF_FEEDBACK` with the first 200 characters of the user's feedback.
 
 ## Execution Handoff
+
+Before offering execution choice, create a partial metrics snapshot:
+```bash
+# Create partial metrics snapshot at writing-plans stage
+SP_WF_ID="${WF_ID}" SP_REPO="${REPO}" SP_TOPIC="TOPIC" SP_VERSION="${SP_VERSION}" SP_TASK_TYPE="unknown" python3 << 'PYEOF'
+import json, os, sys
+from datetime import datetime
+
+cwd = os.getcwd()
+wf_file = os.path.join(cwd, ".stellar-powers", "workflow.jsonl")
+wf_id = os.environ.get("SP_WF_ID", "")
+if not wf_id:
+    sys.exit(0)
+
+events = []
+with open(wf_file) as f:
+    for line in f:
+        line = line.strip()
+        if not line: continue
+        try:
+            evt = json.loads(line)
+            if evt.get("workflow_id") == wf_id:
+                events.append(evt)
+        except: continue
+
+metrics_dir = os.path.join(cwd, ".stellar-powers", "metrics")
+os.makedirs(metrics_dir, exist_ok=True)
+topic = os.environ.get("SP_TOPIC", "unknown")
+pkg = {
+    "package_version": "1.0",
+    "workflow_id": wf_id,
+    "stage": "writing-plans",
+    "stellar_powers_version": os.environ.get("SP_VERSION", "unknown"),
+    "context": {"repo": os.environ.get("SP_REPO", "unknown"), "task_type": os.environ.get("SP_TASK_TYPE", "unknown"), "skills_chain": ["brainstorming", "writing-plans"]},
+    "events_count": len(events),
+    "corrections": sum(1 for e in events if e.get("event") == "user_correction"),
+    "steps_completed": sum(1 for e in events if e.get("event") == "step_completed")
+}
+pkg_path = os.path.join(metrics_dir, f"{datetime.utcnow().strftime('%Y-%m-%d')}-{topic}-{wf_id[:8]}-partial.json")
+# Remove old partials for this workflow
+for f_name in os.listdir(metrics_dir):
+    if wf_id[:8] in f_name and f_name.endswith("-partial.json"):
+        os.remove(os.path.join(metrics_dir, f_name))
+with open(pkg_path, "w") as f:
+    json.dump(pkg, f, indent=2)
+PYEOF
+```
+Replace `TOPIC` with the actual topic.
 
 After saving the plan, offer execution choice:
 

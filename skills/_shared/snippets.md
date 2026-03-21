@@ -184,6 +184,11 @@ if os.path.exists(aw_path):
     except:
         pass
 
+repo = os.environ.get("SP_REPO") or aw.get("repo", "unknown")
+task_type = os.environ.get("SP_TASK_TYPE") or aw.get("task_type", "unknown")
+sp_version = os.environ.get("SP_VERSION") or aw.get("sp_version", "unknown")
+topic = os.environ.get("SP_TOPIC") or aw.get("topic", "unknown")
+
 # Extract timeline
 started = ""
 completed = ""
@@ -199,6 +204,14 @@ for e in events:
         duration = d.get("duration_minutes", 0)
         completion_feedback = d.get("completion_feedback", "")
         outcome = d.get("outcome", "success")
+
+if started and completed:
+    try:
+        start_dt = datetime.fromisoformat(started.replace('Z', '+00:00'))
+        end_dt = datetime.fromisoformat(completed.replace('Z', '+00:00'))
+        duration = int((end_dt - start_dt).total_seconds() / 60)
+    except Exception:
+        duration = 0
 
 # Extract skills chain
 skills_seen = []
@@ -263,11 +276,11 @@ for e in events:
 package = {
     "package_version": "1.0",
     "workflow_id": wf_id,
-    "stellar_powers_version": aw.get("sp_version", "unknown"),
+    "stellar_powers_version": sp_version,
     "context": {
-        "repo": aw.get("repo", "unknown"),
+        "repo": repo,
         "project_type": aw.get("project_type", "unknown"),
-        "task_type": aw.get("task_type", "unknown"),
+        "task_type": task_type,
         "skills_chain": skills_seen
     },
     "timeline": {
@@ -289,13 +302,6 @@ package = {
 metrics_dir = os.path.join(cwd, ".stellar-powers", "metrics")
 os.makedirs(metrics_dir, exist_ok=True)
 date_str = datetime.utcnow().strftime("%Y-%m-%d")
-topic = aw.get("topic", "unknown")
-for e in events:
-    if e.get("event") in ("workflow_started", "skill_invocation"):
-        t = e.get("data", {}).get("topic", "") or e.get("data", {}).get("args", "").split()[0] if e.get("data", {}).get("args") else ""
-        if t:
-            topic = t
-            break
 
 pkg_path = os.path.join(metrics_dir, f"{date_str}-{topic}-{wf_id[:8]}.json")
 with open(pkg_path, "w") as f:
@@ -416,6 +422,21 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"workflow_on_hold\",
 
 # Resume a held workflow
 # mv ".stellar-powers/.active-workflow.held.${SELECTED_WF_ID}" ".stellar-powers/.active-workflow"
+```
+
+## Active Workflow Step Update
+
+Used by skills to update the current step in `.active-workflow`.
+
+```bash
+# Update .active-workflow step field
+python3 -c "
+import json
+aw = json.load(open('.stellar-powers/.active-workflow'))
+aw['step'] = 'STEP_NAME'
+aw['step_number'] = N
+json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
+" && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
 ```
 
 Also create `.stellar-powers/.gitignore` with:

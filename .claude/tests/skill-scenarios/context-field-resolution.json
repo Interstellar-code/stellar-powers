@@ -1,0 +1,35 @@
+{
+  "name": "context-field-resolution",
+  "description": "Events capture context from .active-workflow correctly",
+  "setup": {
+    "active_workflow": {
+      "workflow_id": "TEST-002",
+      "skill": "writing-plans",
+      "topic": "billing",
+      "step": "writing_tasks",
+      "step_number": 3,
+      "started": "2026-03-21T11:00:00Z",
+      "repo": "appsfomo",
+      "task_type": "feature",
+      "sp_version": "1.4.0"
+    },
+    "workflow_events": []
+  },
+  "hooks_to_test": [
+    {
+      "hook": "user-prompt-submit",
+      "input": {"prompt": "continue with the plan"},
+      "expect_event": "user_message"
+    }
+  ],
+  "expected": {
+    "event_types_present": ["user_message"],
+    "event_field_values": {
+      "user_message": {
+        "data.active_skill": "writing-plans",
+        "data.active_step": "writing_tasks"
+      }
+    },
+    "workflow_id_correct": "TEST-002"
+  }
+}

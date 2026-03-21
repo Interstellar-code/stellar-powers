@@ -1,0 +1,34 @@
+{
+  "name": "kill-switch",
+  "description": "No events when feedback_enabled is false",
+  "setup": {
+    "active_workflow": {
+      "workflow_id": "TEST-003",
+      "skill": "brainstorming",
+      "topic": "disabled-test",
+      "step": "test",
+      "step_number": 1,
+      "started": "2026-03-21T12:00:00Z",
+      "repo": "test-repo",
+      "task_type": "feature",
+      "sp_version": "1.3.0"
+    },
+    "config": {"feedback_enabled": false},
+    "workflow_events": []
+  },
+  "hooks_to_test": [
+    {
+      "hook": "user-prompt-submit",
+      "input": {"prompt": "this should not be logged"},
+      "expect_event": null
+    },
+    {
+      "hook": "task-completed",
+      "input": {"task_id": "1", "task_subject": "Should not log"},
+      "expect_event": null
+    }
+  ],
+  "expected": {
+    "no_events": true
+  }
+}

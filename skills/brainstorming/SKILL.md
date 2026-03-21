@@ -78,14 +78,77 @@ You MUST create a task for each of these items and complete them in order:
    # Log at step end
    echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"step_completed\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"brainstorming\",\"step\":\"STEP_NAME\",\"step_number\":N}}" >> .stellar-powers/workflow.jsonl
    ```
-1. **Explore project context** — check files, docs, recent commits
+1. **Explore project context** — check files, docs, recent commits. After completing, update .active-workflow:
+   ```bash
+   python3 -c "
+   import json
+   aw = json.load(open('.stellar-powers/.active-workflow'))
+   aw['step'] = 'explore_context'
+   aw['step_number'] = 1
+   json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
+   " && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+   ```
 2. **Offer visual companion** — if the topic involves UI, frontend, or any visual output, you MUST offer the visual companion (mockups are critical for alignment on UI work). For non-visual topics, offer only if diagrams would help. This is its own message, not combined with a clarifying question. See the Visual Companion section below.
-3. **Ask clarifying questions** — check for cross-project porting intent first (see "Cross-project feature porting" section), then ask one at a time to understand purpose/constraints/success criteria
-4. **Propose 2-3 approaches** — with trade-offs and your recommendation
-5. **Present design** — in sections scaled to their complexity, get user approval after each section
-6. **Write design doc** — save to `.stellar-powers/specs/YYYY-MM-DD-<topic>-design.md` and commit
-7. **Spec review loop** — dispatch spec-document-reviewer subagent with precisely crafted review context (never your session history); fix issues and re-dispatch until approved (max 3 iterations, then surface to human)
-8. **User reviews written spec** — ask user to review the spec file before proceeding
+3. **Ask clarifying questions** — check for cross-project porting intent first (see "Cross-project feature porting" section), then ask one at a time to understand purpose/constraints/success criteria. After completing, update .active-workflow:
+   ```bash
+   python3 -c "
+   import json
+   aw = json.load(open('.stellar-powers/.active-workflow'))
+   aw['step'] = 'clarifying_questions'
+   aw['step_number'] = 3
+   json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
+   " && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+   ```
+4. **Propose 2-3 approaches** — with trade-offs and your recommendation. After completing, update .active-workflow:
+   ```bash
+   python3 -c "
+   import json
+   aw = json.load(open('.stellar-powers/.active-workflow'))
+   aw['step'] = 'propose_approaches'
+   aw['step_number'] = 4
+   json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
+   " && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+   ```
+5. **Present design** — in sections scaled to their complexity, get user approval after each section. After completing, update .active-workflow:
+   ```bash
+   python3 -c "
+   import json
+   aw = json.load(open('.stellar-powers/.active-workflow'))
+   aw['step'] = 'present_design'
+   aw['step_number'] = 5
+   json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
+   " && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+   ```
+6. **Write design doc** — save to `.stellar-powers/specs/YYYY-MM-DD-<topic>-design.md` and commit. After completing, update .active-workflow:
+   ```bash
+   python3 -c "
+   import json
+   aw = json.load(open('.stellar-powers/.active-workflow'))
+   aw['step'] = 'write_doc'
+   aw['step_number'] = 6
+   json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
+   " && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+   ```
+7. **Spec review loop** — dispatch spec-document-reviewer subagent with precisely crafted review context (never your session history); fix issues and re-dispatch until approved (max 3 iterations, then surface to human). After completing, update .active-workflow:
+   ```bash
+   python3 -c "
+   import json
+   aw = json.load(open('.stellar-powers/.active-workflow'))
+   aw['step'] = 'spec_review'
+   aw['step_number'] = 7
+   json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
+   " && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+   ```
+8. **User reviews written spec** — ask user to review the spec file before proceeding. After completing, update .active-workflow:
+   ```bash
+   python3 -c "
+   import json
+   aw = json.load(open('.stellar-powers/.active-workflow'))
+   aw['step'] = 'user_review'
+   aw['step_number'] = 8
+   json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
+   " && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+   ```
 9. **Transition to implementation** — set up a git worktree for isolated implementation (invoke `stellar-powers:using-git-worktrees`), then invoke writing-plans skill to create implementation plan
 
 ## Process Flow
@@ -228,6 +291,54 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"user_correction\",\
 Replace `GATE_NAME` with the gate name (e.g., `design_section_approval`, `spec_review`, `user_review`) and `FIRST_200_CHARS_OF_FEEDBACK` with the first 200 characters of the user's feedback.
 
 **Implementation:**
+
+- Before invoking writing-plans, create a partial metrics snapshot:
+  ```bash
+  # Create partial metrics snapshot at brainstorming stage
+  SP_WF_ID="${WF_ID}" SP_REPO="${REPO}" SP_TOPIC="TOPIC" SP_VERSION="${SP_VERSION}" SP_TASK_TYPE="unknown" python3 << 'PYEOF'
+  import json, os, sys
+  from datetime import datetime
+
+  cwd = os.getcwd()
+  wf_file = os.path.join(cwd, ".stellar-powers", "workflow.jsonl")
+  wf_id = os.environ.get("SP_WF_ID", "")
+  if not wf_id:
+      sys.exit(0)
+
+  events = []
+  with open(wf_file) as f:
+      for line in f:
+          line = line.strip()
+          if not line: continue
+          try:
+              evt = json.loads(line)
+              if evt.get("workflow_id") == wf_id:
+                  events.append(evt)
+          except: continue
+
+  metrics_dir = os.path.join(cwd, ".stellar-powers", "metrics")
+  os.makedirs(metrics_dir, exist_ok=True)
+  topic = os.environ.get("SP_TOPIC", "unknown")
+  pkg = {
+      "package_version": "1.0",
+      "workflow_id": wf_id,
+      "stage": "brainstorming",
+      "stellar_powers_version": os.environ.get("SP_VERSION", "unknown"),
+      "context": {"repo": os.environ.get("SP_REPO", "unknown"), "task_type": os.environ.get("SP_TASK_TYPE", "unknown"), "skills_chain": ["brainstorming"]},
+      "events_count": len(events),
+      "corrections": sum(1 for e in events if e.get("event") == "user_correction"),
+      "steps_completed": sum(1 for e in events if e.get("event") == "step_completed")
+  }
+  pkg_path = os.path.join(metrics_dir, f"{datetime.utcnow().strftime('%Y-%m-%d')}-{topic}-{wf_id[:8]}-partial.json")
+  # Remove old partials for this workflow
+  for f_name in os.listdir(metrics_dir):
+      if wf_id[:8] in f_name and f_name.endswith("-partial.json"):
+          os.remove(os.path.join(metrics_dir, f_name))
+  with open(pkg_path, "w") as f:
+      json.dump(pkg, f, indent=2)
+  PYEOF
+  ```
+  Replace `TOPIC` with the actual topic.
 
 - Before invoking writing-plans, update .active-workflow for the handoff:
   ```bash
