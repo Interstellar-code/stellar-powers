@@ -2,7 +2,7 @@
   "name": "stellar-powers",
   "displayName": "Stellar Powers",
   "description": "Enhanced skills library with multi-persona subagent dispatch: TDD, debugging, collaboration patterns, and proven techniques",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "author": {
     "name": "Rohit Sharma",
     "email": "rohit@interstellarconsulting.com"

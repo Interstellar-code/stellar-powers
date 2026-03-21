@@ -1,5 +1,20 @@
 # Stellar Powers Release Notes
 
+## v1.5.0 — First Autoresearch Cycle Complete
+
+Improvements driven by self-improving-agent analysis of Issue #1 and #2:
+- **Fix:** SDD now injects project context (CLAUDE.md, .env, package.json) into every subagent — prevents wrong assumptions (e.g., PGlite vs PostgreSQL)
+- **Fix:** Context7 query specificity guidance — query specific APIs ("databaseHooks") not library names ("better-auth")
+- **Fix:** Review verdicts now explicitly logged after every spec-reviewer and code-quality-reviewer dispatch
+- **Fix:** task_type inferred from user args instead of hardcoded "unknown"
+- **Fix:** Verbal correction capture — skills now log user_correction for redirects/disagreements outside formal review gates
+- **New eval:** Metrics packaging scenario validates full packaging flow (env vars, duration, JSON structure)
+- **New eval:** Comprehensive redaction scenario tests all 6 redaction patterns
+- **New eval:** Subagent-stop capture scenario with truncation validation
+- **Eval score:** 33/33 tests + 6/6 scenarios = 100%
+
+---
+
 ## v1.4.0 — Self-Improving Agent + Bug Fixes
 
 - **New local skill:** `self-improving-agent` — autoresearch-inspired loop that analyzes feedback issues, runs eval scenarios, proposes skill improvements on a dedicated branch, and keeps/discards based on score comparison
