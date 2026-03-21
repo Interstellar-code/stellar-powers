@@ -30,7 +30,7 @@ You MUST create a task for each of these items and complete them in order:
    Also check `.stellar-powers/workflow.jsonl` for incomplete brainstorming workflows. If found, load the most recent workflow's context (spec path, last event) to inform your work. Do not re-prompt the user — session-start already surfaced incomplete work.
 1. **Explore project context** — check files, docs, recent commits
 2. **Offer visual companion** (if topic will involve visual questions) — this is its own message, not combined with a clarifying question. See the Visual Companion section below.
-3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
+3. **Ask clarifying questions** — check for cross-project porting intent first (see "Cross-project feature porting" section), then ask one at a time to understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
 5. **Present design** — in sections scaled to their complexity, get user approval after each section
 6. **Write design doc** — save to `.stellar-powers/specs/YYYY-MM-DD-<topic>-design.md` and commit
@@ -86,6 +86,14 @@ digraph brainstorming {
 - Prefer multiple choice questions when possible, but open-ended is fine too
 - Only one question per message - if a topic needs more exploration, break it into multiple questions
 - Focus on understanding: purpose, constraints, success criteria
+
+**Cross-project feature porting:**
+
+- Before asking the first clarifying question at step 3, check whether the user's initial message matches cross-project porting intent — references to porting, extracting, migrating, or reusing a feature from another local project. See `feature-porting/SKILL.md` for the canonical trigger phrase list.
+- If detected, ask: "It sounds like you want to port a feature from another project. Should I run a feature extraction scan first?"
+- If yes: invoke `stellar-powers:feature-porting` skill. It runs its full flow (input collection, scan, approval). Once approved, control returns here.
+- If the user provides an existing report path (e.g., "I already have the extraction report at .stellar-powers/reports/..."), read that specific path. No scan needed.
+- After feature-porting completes or a report is provided, resume at step 3. Treat the extraction report as a requirements document — don't re-ask questions the report already answers. Focus clarifying questions on adaptation decisions (e.g., "the source uses X approach but the target uses Y — which do you prefer?").
 
 **Exploring approaches:**
 
