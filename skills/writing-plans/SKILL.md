@@ -132,7 +132,7 @@ git commit -m "feat: add specific feature"
 
 After writing the complete plan:
 
-1. **MANDATORY:** Read the prompt template at `./plan-document-reviewer-prompt.md` using the Read tool, then dispatch a subagent using the Agent tool with that template's contents as the prompt. Do NOT construct your own review prompt — the template contains the multi-persona catalog that ensures domain-expert review quality. Replace `[PLAN_FILE_PATH]` and `[SPEC_FILE_PATH]` with actual paths. Never pass your session history — only the crafted prompt.
+1. **MANDATORY:** Read the prompt template at `./plan-document-reviewer-prompt.md` using the Read tool, then dispatch a subagent using the Agent tool with `model=sonnet` and that template's contents as the prompt. Do NOT construct your own review prompt — the template contains the multi-persona catalog that ensures domain-expert review quality. Replace `[PLAN_FILE_PATH]` and `[SPEC_FILE_PATH]` with actual paths. Never pass your session history — only the crafted prompt. Never use opus for subagents.
 2. If ❌ Issues Found: fix the issues, re-dispatch reviewer for the whole plan
 3. If ✅ Approved: proceed to execution handoff
 

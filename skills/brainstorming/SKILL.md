@@ -89,6 +89,7 @@ digraph brainstorming {
 
 **Cross-project feature porting:**
 
+- **Loop guard:** If brainstorming was invoked from `stellar-powers:feature-porting` (i.e., args contain a reference to a feature extraction report at `.stellar-powers/reports/`), skip intent detection entirely — the porting scan is already done. Go straight to reading the report and using it as context.
 - Before asking the first clarifying question at step 3, check whether the user's initial message matches cross-project porting intent — references to porting, extracting, migrating, or reusing a feature from another local project. See `feature-porting/SKILL.md` for the canonical trigger phrase list.
 - If detected, ask: "It sounds like you want to port a feature from another project. Should I run a feature extraction scan first?"
 - If yes: invoke `stellar-powers:feature-porting` skill. It runs its full flow (input collection, scan, approval). Once approved, control returns here.
@@ -139,7 +140,7 @@ digraph brainstorming {
 **Spec Review Loop:**
 After writing the spec document:
 
-1. **MANDATORY:** Read the prompt template at `./spec-document-reviewer-prompt.md` using the Read tool, then dispatch a subagent using the Agent tool with that template's contents as the prompt. Do NOT construct your own review prompt — the template contains the multi-persona catalog that ensures domain-expert review quality.
+1. **MANDATORY:** Read the prompt template at `./spec-document-reviewer-prompt.md` using the Read tool, then dispatch a subagent using the Agent tool with `model=sonnet` and that template's contents as the prompt. Do NOT construct your own review prompt — the template contains the multi-persona catalog that ensures domain-expert review quality. Never use opus for subagents.
 2. If Issues Found: fix, re-dispatch, repeat until Approved
 3. If loop exceeds 3 iterations, surface to human for guidance
 

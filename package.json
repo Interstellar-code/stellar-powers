@@ -1,6 +1,13 @@
 {
   "name": "stellar-powers",
   "version": "1.0.8",
+  "description": "Enhanced skills library with multi-persona subagent dispatch: TDD, debugging, collaboration patterns, and proven techniques",
   "type": "module",
-  "main": ".opencode/plugins/superpowers.js"
+  "author": {
+    "name": "Rohit Sharma",
+    "email": "rohit@interstellarconsulting.com"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/Interstellar-code/stellar-powers",
+  "repository": "https://github.com/Interstellar-code/stellar-powers"
 }

@@ -112,7 +112,9 @@ Use the least powerful model that can handle each role to conserve cost and incr
 
 **Integration and judgment tasks** (multi-file coordination, pattern matching, debugging): use a standard model.
 
-**Architecture, design, and review tasks**: use the most capable available model.
+**Architecture, design, and review tasks**: use sonnet.
+
+**Important: Never use opus for subagents.** Use sonnet for all subagent dispatches (implementers, reviewers). Use haiku only for trivially mechanical tasks.
 
 **Task complexity signals:**
 - Touches 1-2 files with a complete spec → cheap model

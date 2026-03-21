@@ -92,6 +92,26 @@ These thoughts mean STOP—you're rationalizing:
 | "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
 | "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
 
+## Available Skills
+
+| Skill | When to Use |
+|---|---|
+| `brainstorming` | Before any creative work — creating features, building components, adding functionality |
+| `feature-porting` | Porting a feature from one project to another — scans source, maps to target |
+| `writing-plans` | When you have a spec or requirements for a multi-step task, before touching code |
+| `subagent-driven-development` | Executing implementation plans with independent tasks via fresh subagents |
+| `executing-plans` | Executing a written implementation plan in a separate session with review checkpoints |
+| `test-driven-development` | Implementing any feature or bugfix — write tests first |
+| `systematic-debugging` | Any bug, test failure, or unexpected behavior — before proposing fixes |
+| `requesting-code-review` | Completing tasks, implementing major features, or before merging |
+| `receiving-code-review` | Receiving code review feedback — requires technical rigor, not blind implementation |
+| `dispatching-parallel-agents` | 2+ independent tasks that can be worked on without shared state |
+| `using-git-worktrees` | Starting feature work that needs isolation from current workspace |
+| `finishing-a-development-branch` | Implementation complete, all tests pass — guides merge, PR, or cleanup |
+| `verification-before-completion` | About to claim work is complete — run verification before asserting success |
+| `writing-skills` | Creating new skills, editing existing skills, or verifying skills work |
+| `using-stellarpowers` | Starting any conversation — establishes how to find and use skills |
+
 ## Skill Priority
 
 When multiple skills could apply, use this order:
