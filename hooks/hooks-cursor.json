@@ -5,6 +5,11 @@
       {
         "command": "./hooks/session-start"
       }
+    ],
+    "postToolUse": [
+      {
+        "command": "./hooks/post-tool-use"
+      }
     ]
   }
 }

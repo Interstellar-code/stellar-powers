@@ -21,9 +21,13 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"review_verdict\",\"
 
 Replace `VERDICT` (approved/issues_found), `N` (iteration number), and `PATH` with actual values.
 
+## Session Resumption
+
+On invocation, check `.stellar-powers/workflow.jsonl` for incomplete requesting-code-review workflows — a `skill_invocation` event without a corresponding `review_verdict`. If found, load the most recent workflow's context to inform your work. Do not re-prompt the user.
+
 # Requesting Code Review
 
-Dispatch stellar-powers:code-reviewer subagent to catch issues before they cascade. The reviewer gets precisely crafted context for evaluation — never your session's history. This keeps the reviewer focused on the work product, not your thought process, and preserves your own context for continued work.
+Dispatch a code review subagent using the `./code-reviewer.md` prompt template to catch issues before they cascade. The reviewer gets precisely crafted context for evaluation — never your session's history. This keeps the reviewer focused on the work product, not your thought process, and preserves your own context for continued work.
 
 **Core principle:** Review early, review often.
 
@@ -74,7 +78,7 @@ You: Let me request code review before proceeding.
 BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | awk '{print $1}')
 HEAD_SHA=$(git rev-parse HEAD)
 
-[Dispatch stellar-powers:code-reviewer subagent]
+[Dispatch code review subagent using ./code-reviewer.md prompt template]
   WHAT_WAS_IMPLEMENTED: Verification and repair functions for conversation index
   PLAN_OR_REQUIREMENTS: Task 2 from .stellar-powers/plans/deployment-plan.md
   BASE_SHA: a7981ec
@@ -120,4 +124,8 @@ You: [Fix progress indicators]
 - Show code/tests that prove it works
 - Request clarification
 
-See template at: requesting-code-review/code-reviewer.md
+See template at: `./code-reviewer.md`
+
+## Related Skills
+
+- `stellar-powers:receiving-code-review` — use when you receive review feedback and need to implement fixes with technical rigor

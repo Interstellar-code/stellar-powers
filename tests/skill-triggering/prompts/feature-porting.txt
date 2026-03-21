@@ -1,0 +1,1 @@
+I want to port the billing feature from /path/to/my-other-project into this one. It has subscription management, payment processing, and invoice generation that I want to reuse here.

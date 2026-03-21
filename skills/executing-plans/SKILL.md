@@ -13,6 +13,18 @@ mkdir -p .stellar-powers
 echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"skill_invocation\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"skill\":\"executing-plans\",\"args\":\"\"}}" >> .stellar-powers/workflow.jsonl
 ```
 
+After each task completion, log:
+
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"task_completed\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"task\":\"TASK_NAME\",\"status\":\"complete\"}}" >> .stellar-powers/workflow.jsonl
+```
+
+When all tasks are done:
+
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"plan_executed\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"plan_path\":\"PLAN_PATH\",\"status\":\"complete\"}}" >> .stellar-powers/workflow.jsonl
+```
+
 Check `.stellar-powers/workflow.jsonl` for incomplete executing-plans workflows. If found, load the most recent workflow's context to inform your work. Do not re-prompt the user.
 
 # Executing Plans

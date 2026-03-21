@@ -10,7 +10,7 @@
   "homepage": "https://github.com/Interstellar-code/stellar-powers",
   "repository": "https://github.com/Interstellar-code/stellar-powers",
   "license": "MIT",
-  "keywords": ["skills", "tdd", "debugging", "collaboration", "best-practices", "workflows"],
+  "keywords": ["skills", "tdd", "debugging", "collaboration", "best-practices", "workflows", "personas", "multi-agent"],
   "skills": "./skills/",
   "agents": "./agents/",
   "commands": "./commands/",

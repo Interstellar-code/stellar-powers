@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: "You MUST use this before any creative work - creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements and design before implementation."
+description: Use when creating features, building components, adding functionality, or modifying behavior - explores user intent, requirements and design before implementation
 ---
 
 # Brainstorming Ideas Into Designs
@@ -36,7 +36,7 @@ You MUST create a task for each of these items and complete them in order:
 6. **Write design doc** — save to `.stellar-powers/specs/YYYY-MM-DD-<topic>-design.md` and commit
 7. **Spec review loop** — dispatch spec-document-reviewer subagent with precisely crafted review context (never your session history); fix issues and re-dispatch until approved (max 3 iterations, then surface to human)
 8. **User reviews written spec** — ask user to review the spec file before proceeding
-9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+9. **Transition to implementation** — set up a git worktree for isolated implementation (invoke `stellar-powers:using-git-worktrees`), then invoke writing-plans skill to create implementation plan
 
 ## Process Flow
 
@@ -92,7 +92,7 @@ digraph brainstorming {
 - **Loop guard:** If brainstorming was invoked from `stellar-powers:feature-porting` (i.e., args contain a reference to a feature extraction report at `.stellar-powers/reports/`), skip intent detection entirely — the porting scan is already done. Go straight to reading the report and using it as context.
 - Before asking the first clarifying question at step 3, check whether the user's initial message matches cross-project porting intent — references to porting, extracting, migrating, or reusing a feature from another local project. See `feature-porting/SKILL.md` for the canonical trigger phrase list.
 - If detected, ask: "It sounds like you want to port a feature from another project. Should I run a feature extraction scan first?"
-- If yes: invoke `stellar-powers:feature-porting` skill. It runs its full flow (input collection, scan, approval). Once approved, control returns here.
+- If yes: invoke `stellar-powers:feature-porting` skill with any source path and feature name parsed from the user's message as args (e.g., args: `"source=/path/to/project feature=billing"`). It runs its full flow (input collection, scan, approval). Once approved, control returns here.
 - If the user provides an existing report path (e.g., "I already have the extraction report at .stellar-powers/reports/..."), read that specific path. No scan needed.
 - After feature-porting completes or a report is provided, resume at step 3. Treat the extraction report as a requirements document — don't re-ask questions the report already answers. Focus clarifying questions on adaptation decisions (e.g., "the source uses X approach but the target uses Y — which do you prefer?").
 
@@ -182,4 +182,4 @@ A browser-based companion for showing mockups, diagrams, and visual options duri
 A question about a UI topic is not automatically a visual question. "What does personality mean in this context?" is a conceptual question — use the terminal. "Which wizard layout works better?" is a visual question — use the browser.
 
 If they agree to the companion, read the detailed guide before proceeding:
-`skills/brainstorming/visual-companion.md`
+`./visual-companion.md`

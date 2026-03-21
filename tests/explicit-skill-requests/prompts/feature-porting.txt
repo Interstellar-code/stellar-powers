@@ -1,0 +1,1 @@
+Use the feature-porting skill to scan /path/to/source-project and extract the authentication feature. The source project uses Laravel with Sanctum auth, and I want to port the login/register/password-reset flows into this Next.js project.

@@ -35,6 +35,21 @@ The core Superpowers workflow is unchanged:
 
 Stellar Powers enhances step 1, 3, and 4 by injecting expert personas into the review subagents dispatched during those steps.
 
+**Additional skills** included beyond the core workflow:
+
+- **feature-porting** — Scans a source project to extract a self-contained feature and generates a porting plan adapted to the target project's stack
+
+## Closed-Loop Workflow Tracking
+
+Stellar Powers writes structured workflow state to a `.stellar-powers/` folder in your project root:
+
+- `workflow.jsonl` — append-only log of workflow events (skill triggers, task completions, review outcomes)
+- `specs/` — generated spec documents
+- `plans/` — generated plan documents
+- `reports/` — code review and post-task reports
+
+This folder is managed automatically via PostToolUse hooks that fire after each Agent tool call, checking persona compliance and appending events to the log.
+
 ## Installation
 
 ### Claude Code
@@ -58,7 +73,10 @@ stellar-powers/
 │   ├── curated/                # Trimmed persona excerpts (~20-30 lines each)
 │   └── source/                 # Full agency-agents library (156 agents)
 ├── skills/                     # All superpowers skills (enhanced)
-├── .claude-plugin/             # Plugin manifest
+│   └── feature-porting/        # Cross-project feature extraction and porting
+├── hooks/                      # SessionStart + PostToolUse hook scripts
+├── .claude-plugin/             # Claude Code plugin manifest
+├── .cursor-plugin/             # Cursor plugin manifest
 └── docs/stellar-powers/        # Specs and plans
 ```
 
