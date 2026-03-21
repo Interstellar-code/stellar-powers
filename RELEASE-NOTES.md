@@ -1,5 +1,17 @@
 # Stellar Powers Release Notes
 
+## v1.6.0 — Second Autoresearch Cycle (Issue #3)
+
+Improvements driven by self-improving-agent analysis of Issue #3 (nyayasathi-app admin-script-integration):
+- **Fix:** Plan reviewer strengthened — now checks schema conventions, migration tools, input validation, HTML validity
+- **Fix:** Metrics packager null-field bug — `dict.get("field", "default")` returned None for explicit null values, now uses `or` fallback pattern throughout all packagers (snippets.md, test-packager.py, 4 terminal skills, 2 handoff skills)
+- **Fix:** Partial packagers at brainstorming/writing-plans handoffs now write rich data (user_messages, ai_responses, corrections, tasks, tool_failures) instead of just counts
+- **Fix:** SDD context injection now extracts schema conventions from existing model files
+- **New eval:** Null-field fallback scenario tests the packager with explicit null values in .active-workflow
+- **Eval score:** 33/33 tests + 7/7 scenarios = 100%
+
+---
+
 ## v1.5.0 — First Autoresearch Cycle Complete
 
 Improvements driven by self-improving-agent analysis of Issue #1 and #2:
