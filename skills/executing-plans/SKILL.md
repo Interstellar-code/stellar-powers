@@ -10,7 +10,29 @@ On invocation, generate a workflow ID and log:
 ```bash
 WF_ID=$(uuidgen 2>/dev/null || python3 -c "import uuid; print(uuid.uuid4())")
 mkdir -p .stellar-powers
+
+# Chain detection — inherit workflow_id if writing-plans is the active skill
+if [ -f ".stellar-powers/.active-workflow" ]; then
+  EXISTING_SKILL=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('skill',''))" 2>/dev/null)
+  if [ "$EXISTING_SKILL" = "writing-plans" ]; then
+    WF_ID=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('workflow_id',''))" 2>/dev/null)
+  fi
+fi
+
 echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"skill_invocation\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"skill\":\"executing-plans\",\"args\":\"\"}}" >> .stellar-powers/workflow.jsonl
+
+# Update .active-workflow with current skill
+python3 -c "
+import json, os
+aw_path = '.stellar-powers/.active-workflow'
+aw = {}
+if os.path.exists(aw_path):
+    try: aw = json.load(open(aw_path))
+    except: pass
+aw['skill'] = 'executing-plans'
+aw['workflow_id'] = '${WF_ID}'
+json.dump(aw, open(aw_path, 'w'))
+" 2>/dev/null
 ```
 
 After each task completion, log:
@@ -85,6 +107,47 @@ After all tasks complete and verified:
 - Reference skills when plan says to
 - Stop when blocked, don't guess
 - Never start implementation on main/master branch without explicit user consent
+
+## Completion Checkpoint
+
+After all tasks complete and the finishing-a-development-branch skill is done, present the completion checkpoint:
+
+"All tasks completed and reviewed. Is the workflow implementation now complete?
+
+a) Yes, complete — I'll package the metrics and close this workflow
+b) Not yet — what's remaining?
+c) Complete, and here's my feedback: [user types feedback]"
+
+**On user confirming complete (a or c):**
+
+1. Log workflow_completed event:
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"workflow_completed\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"executing-plans\",\"duration_minutes\":DURATION,\"steps_completed\":N,\"steps_total\":TOTAL,\"outcome\":\"success\",\"completion_feedback\":\"USER_FEEDBACK_OR_EMPTY\"}}" >> .stellar-powers/workflow.jsonl
+```
+
+2. Package metrics — read `skills/_shared/snippets.md` for the full Metrics Packaging script, then run:
+```bash
+SP_WF_ID="${WF_ID}" python3 << 'PYEOF'
+# (paste full Metrics Packaging script from skills/_shared/snippets.md)
+PYEOF
+```
+
+3. Prune workflow.jsonl — read `skills/_shared/snippets.md` for the full Pruning script, then run:
+```bash
+SP_WF_ID="${WF_ID}" python3 << 'PYEOF'
+# (paste full Pruning script from skills/_shared/snippets.md)
+PYEOF
+```
+
+4. Delete .active-workflow:
+```bash
+rm -f .stellar-powers/.active-workflow
+```
+
+5. Report: "Workflow complete. Metrics packaged to .stellar-powers/metrics/. Run /stellar-powers:send-feedback to submit."
+
+**On user saying "not yet" (b):**
+Ask what's remaining and continue working. Do not close the workflow.
 
 ## Integration
 
