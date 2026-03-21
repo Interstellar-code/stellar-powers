@@ -63,9 +63,10 @@ Execute plan by dispatching fresh subagent per task, with two-stage review after
 1. Read `CLAUDE.md` or `AGENTS.md` if they exist — extract database setup, framework versions, conventions, constraints
 2. Read `.env` or `.env.example` — identify database type (PostgreSQL, PGlite, SQLite, etc.), key service URLs
 3. Read `package.json` — identify framework, key dependencies and their versions
-4. Compile a "Project Context" block (max ~200 words) with the critical facts. Include this in EVERY implementer dispatch's `## Context` section.
+4. Read 1-2 existing schema/model files — identify conventions for timestamps (`mode: 'date'`, `defaultNow()`, `$onUpdate()`), naming patterns, validation patterns, and default values
+5. Compile a "Project Context" block (max ~200 words) with the critical facts including schema conventions. Include this in EVERY implementer dispatch's `## Context` section.
 
-This prevents subagents from making wrong assumptions (e.g., assuming PGlite when the project uses PostgreSQL).
+This prevents subagents from making wrong assumptions (e.g., assuming PGlite when the project uses PostgreSQL, or not following timestamp conventions).
 
 ## When to Use
 
