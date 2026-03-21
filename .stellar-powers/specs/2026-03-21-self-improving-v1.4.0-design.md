@@ -104,7 +104,7 @@ export SP_TASK_TYPE=$(python3 -c "import json; print(json.load(open('.stellar-po
 export SP_VERSION=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('sp_version','unknown'))" 2>/dev/null || echo "unknown")
 export SP_TOPIC=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('topic','unknown'))" 2>/dev/null || echo "unknown")
 ```
-The packager reads these env vars instead of `.active-workflow` directly.
+Update the packager script to read `SP_REPO`, `SP_TASK_TYPE`, `SP_VERSION`, `SP_TOPIC` from env vars first, falling back to `.active-workflow` if env vars are empty. This means the packager itself must be modified — both in `snippets.md` and in every terminal skill's inlined packager block.
 
 #### Fix 3: Duration calculation
 
@@ -142,14 +142,14 @@ Add a "stage snapshot" at each handoff point:
 - brainstorming → writing-plans: create partial metrics package with `"stage": "brainstorming"`
 - writing-plans → SDD/executing-plans: update partial package with `"stage": "writing-plans"`
 - Terminal skill completion: create full package, delete partials
-- Abandon/hold at invocation gate: promote partial to full
+- Abandon/hold at invocation gate: rename the `-partial.json` to `.json` (remove the `-partial` suffix) — the partial package becomes the final package for that workflow. No re-run of the packager needed since the partial already has the data up to that stage.
 
 Partial packages use `-partial` suffix: `2026-03-21-topic-ABCD1234-partial.json`
 Send-feedback sends both full and partial packages.
 
 #### Fix 6: Update snippets.md
 
-Reflect all fixes in `skills/_shared/snippets.md`. The snippets file remains as reference documentation — the actual executable code is inlined in each skill.
+Update `skills/_shared/snippets.md` to reflect all fixes: update the packager code block to use env vars with `.active-workflow` fallback, add the env var export block, add duration calculation, add the `.active-workflow` step update pattern. Do not remove any existing snippets — only update the ones that changed. The snippets file remains as reference documentation — the actual executable code is inlined in each skill.
 
 ## Implementation Notes
 
