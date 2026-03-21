@@ -29,7 +29,7 @@ You MUST create a task for each of these items and complete them in order:
    ```
    Also check `.stellar-powers/workflow.jsonl` for incomplete brainstorming workflows. If found, load the most recent workflow's context (spec path, last event) to inform your work. Do not re-prompt the user — session-start already surfaced incomplete work.
 1. **Explore project context** — check files, docs, recent commits
-2. **Offer visual companion** (if topic will involve visual questions) — this is its own message, not combined with a clarifying question. See the Visual Companion section below.
+2. **Offer visual companion** — if the topic involves UI, frontend, or any visual output, you MUST offer the visual companion (mockups are critical for alignment on UI work). For non-visual topics, offer only if diagrams would help. This is its own message, not combined with a clarifying question. See the Visual Companion section below.
 3. **Ask clarifying questions** — check for cross-project porting intent first (see "Cross-project feature porting" section), then ask one at a time to understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
 5. **Present design** — in sections scaled to their complexity, get user approval after each section
@@ -129,8 +129,9 @@ digraph brainstorming {
 
 - Write the validated design (spec) to `.stellar-powers/specs/YYYY-MM-DD-<topic>-design.md`
   - (User preferences for spec location override this default)
+- **Mockup references:** If mockups were created during brainstorming, save them to `.stellar-powers/mockups/` and reference them in the spec (e.g., "See mockup at `.stellar-powers/mockups/YYYY-MM-DD-<component>.html`"). Mockup references should carry through to the implementation plan so subagents know the visual target.
 - Use elements-of-style:writing-clearly-and-concisely skill if available
-- Commit the design document to git
+- Commit the design document (and any mockup files) to git
 - Log spec creation to workflow:
   ```bash
   echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"spec_created\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"path\":\"SPEC_PATH\",\"skill\":\"brainstorming\",\"topic\":\"TOPIC\"}}" >> .stellar-powers/workflow.jsonl
@@ -169,8 +170,9 @@ Wait for the user's response. If they request changes, make them and re-run the 
 
 A browser-based companion for showing mockups, diagrams, and visual options during brainstorming. Available as a tool — not a mode. Accepting the companion means it's available for questions that benefit from visual treatment; it does NOT mean every question goes through the browser.
 
-**Offering the companion:** When you anticipate that upcoming questions will involve visual content (mockups, layouts, diagrams), offer it once for consent:
-> "Some of what we're working on might be easier to explain if I can show it to you in a web browser. I can put together mockups, diagrams, comparisons, and other visuals as we go. This feature is still new and can be token-intensive. Want to try it? (Requires opening a local URL)"
+**Offering the companion:** When the topic involves UI, frontend, or any visual output, you MUST offer the companion — mockups during brainstorming are critical for aligning on requirements before implementation. For non-visual topics, offer only if architecture diagrams or flowcharts would help.
+
+> "This involves UI work, so I'd like to show you mockups as we design. I can put together layouts, component previews, and visual comparisons in a web browser as we go. This helps us align on the design before writing any code. Want to try it? (Requires opening a local URL)"
 
 **This offer MUST be its own message.** Do not combine it with clarifying questions, context summaries, or any other content. The message should contain ONLY the offer above and nothing else. Wait for the user's response before continuing. If they decline, proceed with text-only brainstorming.
 
