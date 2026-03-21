@@ -464,10 +464,10 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"workflow_completed\
 2. Export env vars from .active-workflow:
 ```bash
 export SP_WF_ID="${WF_ID}"
-export SP_REPO=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('repo','unknown'))" 2>/dev/null || echo "unknown")
-export SP_TASK_TYPE=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('task_type','unknown'))" 2>/dev/null || echo "unknown")
-export SP_VERSION=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('sp_version','unknown'))" 2>/dev/null || echo "unknown")
-export SP_TOPIC=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('topic','unknown'))" 2>/dev/null || echo "unknown")
+export SP_REPO=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('repo') or 'unknown')" 2>/dev/null || echo "unknown")
+export SP_TASK_TYPE=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('task_type') or 'unknown')" 2>/dev/null || echo "unknown")
+export SP_VERSION=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('sp_version') or 'unknown')" 2>/dev/null || echo "unknown")
+export SP_TOPIC=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('topic') or 'unknown')" 2>/dev/null || echo "unknown")
 ```
 
 3. Package metrics:
@@ -504,10 +504,10 @@ if os.path.exists(aw_path):
     except:
         pass
 
-repo = os.environ.get("SP_REPO") or aw.get("repo", "unknown")
-task_type = os.environ.get("SP_TASK_TYPE") or aw.get("task_type", "unknown")
-sp_version = os.environ.get("SP_VERSION") or aw.get("sp_version", "unknown")
-topic = os.environ.get("SP_TOPIC") or aw.get("topic", "unknown")
+repo = os.environ.get("SP_REPO") or aw.get("repo") or "unknown"
+task_type = os.environ.get("SP_TASK_TYPE") or aw.get("task_type") or "unknown"
+sp_version = os.environ.get("SP_VERSION") or aw.get("sp_version") or "unknown"
+topic = os.environ.get("SP_TOPIC") or aw.get("topic") or "unknown"
 
 started = ""
 completed = ""
@@ -520,9 +520,9 @@ for e in events:
     if e.get("event") == "workflow_completed":
         completed = e.get("ts", "")
         d = e.get("data", {})
-        duration = d.get("duration_minutes", 0)
-        completion_feedback = d.get("completion_feedback", "")
-        outcome = d.get("outcome", "success")
+        duration = d.get("duration_minutes") or 0
+        completion_feedback = d.get("completion_feedback") or ""
+        outcome = d.get("outcome") or "success"
 
 if started and completed:
     try:
