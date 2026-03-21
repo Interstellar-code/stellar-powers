@@ -9,7 +9,7 @@
     {
       "name": "stellar-powers",
       "description": "Enhanced skills library for Claude Code with multi-persona subagent dispatch: TDD, debugging, collaboration patterns, and proven techniques",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "source": "./",
       "author": {
         "name": "Rohit Sharma",
