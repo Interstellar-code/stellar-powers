@@ -1,5 +1,33 @@
 # Stellar Powers Release Notes
 
+## v1.0.8 (2026-03-21)
+
+### New Skill: Feature Porting
+
+Cross-project feature extraction and adaptation — port features from one project to another with automated analysis.
+
+- **`stellar-powers:feature-porting` skill** — dispatches a Sonnet sub-agent to scan a source project, discover its tech stack dynamically, extract a specific feature's backend/frontend/business logic, map it to the target project, and produce a combined extraction report
+- **Stack-agnostic discovery** — no hardcoded framework assumptions; the scanner reads project indicators (CLAUDE.md, package.json, composer.json, etc.) and adapts to whatever stack it finds
+- **Scope boundary heuristics** — file-level, import, and naming tests to determine what's feature-owned vs. shared, with uncertain items deferred to user approval
+- **Brainstorming integration** — brainstorming skill now detects cross-project porting intent and can invoke feature-porting automatically, or accept an existing extraction report
+- **Approval gate** — report summary presented for user review before proceeding to design phase
+- **Session resumption** — interrupted scans are recoverable via workflow.jsonl
+- **Graceful degradation** — partial reports saved with `## Incomplete` section if context limits are hit
+
+### Docs Reorganization
+
+- Moved docs from `docs/plans/` and `docs/superpowers/` to `docs/stellar-powers/` for consistency with project naming
+
+---
+
+## v1.0.7 (2026-03-21)
+
+### Maintenance
+
+- Version bump and frontmatter fixes
+
+---
+
 ## v1.0.6 (2026-03-20)
 
 ### Closed-Loop Workflow Tracking
