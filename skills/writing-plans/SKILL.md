@@ -120,7 +120,7 @@ Max ~200 tokens per library entry. Summarize 3-5 key API patterns relevant to th
 ## Task Structure
 
 ````markdown
-### Task N: [Component Name]
+### Task N: [Component Name] [batch|solo]
 
 **Files:**
 - Create: `exact/path/to/file.py`
@@ -159,6 +159,26 @@ git add tests/path/test.py src/path/file.py
 git commit -m "feat: add specific feature"
 ```
 ````
+
+## Task Annotations: [batch] / [solo]
+
+Every task heading MUST include a `[batch]` or `[solo]` annotation. Assess each task against these complexity signals:
+
+**[batch] — ALL must be true:**
+- Touches 1-2 files
+- Steps are mechanical (write file, run command, commit)
+- No integration concerns across other tasks
+- No "judgment", "architecture", or "design decision" language in description
+- Task is independent (no dependencies on other tasks)
+
+**[solo] — ANY one triggers solo:**
+- Touches 3+ files
+- Requires multi-file coordination or integration
+- Contains judgment/design language
+- Has dependencies on other tasks (references another task by number, uses files created by prior tasks, or references output from prior tasks)
+- Modifies shared interfaces or schemas
+
+These annotations tell `subagent-driven-development` whether to batch consecutive `[batch]` tasks into a single sub-agent dispatch (2-4 per agent) or dispatch each `[solo]` task individually. The user can change annotations during plan review.
 
 ## Remember
 - Exact file paths always
