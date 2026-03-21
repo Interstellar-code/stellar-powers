@@ -147,6 +147,20 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 - `./spec-reviewer-prompt.md` - Read and use as prompt when dispatching spec compliance reviewer subagent (contains Software Architect persona)
 - `./code-quality-reviewer-prompt.md` - Read and use as prompt when dispatching code quality reviewer subagent (contains Code Reviewer persona)
 
+**Context7 enrichment:** Before dispatching each implementer, identify which libraries the task touches (from the plan's Tech Stack and the task's file list — max 3 per task, skip utility libs and private `@org/` packages). Set `QUERY` to the specific API topic the task covers (e.g., `"webhooks"` for a Stripe webhook handler, not `"stripe"`). Check the project's pinned version and note any major version mismatch. Fetch current docs via Context7:
+
+```bash
+LIB_ID=$(curl -s --max-time 10 "https://context7.com/api/v2/libs/search?libraryName=${LIBRARY}" \
+  -H "Authorization: Bearer $CONTEXT7_API_KEY" \
+  | python3 -c "import sys,json; r=json.load(sys.stdin).get('results',[]); print(max(r, key=lambda x: x.get('trustScore',0))['id'] if r else '')" 2>/dev/null)
+if [ -n "$LIB_ID" ]; then
+  curl -s --max-time 10 "https://context7.com/api/v2/context?libraryId=${LIB_ID}&query=${QUERY}&tokens=5000&type=txt" \
+    -H "Authorization: Bearer $CONTEXT7_API_KEY" 2>/dev/null
+fi
+```
+
+Inject the fetched docs into the `## Library References` section of the implementer prompt. If `CONTEXT7_API_KEY` is not set, skip this step silently.
+
 ## Example Workflow
 
 ```

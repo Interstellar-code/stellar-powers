@@ -16,6 +16,14 @@ Task tool (general-purpose):
 
     [Scene-setting: where this fits, dependencies, architectural context]
 
+    ## Library References (if provided by controller via Context7)
+
+    [Controller injects current library documentation here.
+    Use these as the authoritative API reference — they override
+    your training data if there are differences.
+    If versions differ from the project's pinned version, follow
+    the project's version, not the latest docs.]
+
     ## Before You Begin
 
     If you have questions about:
