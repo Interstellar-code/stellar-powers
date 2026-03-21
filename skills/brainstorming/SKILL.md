@@ -63,12 +63,13 @@ You MUST create a task for each of these items and complete them in order:
    REPO=$(basename $(git remote get-url origin 2>/dev/null | sed 's/.git$//') 2>/dev/null || basename $(pwd))
    SP_VERSION=$(python3 -c "import json; print(json.load(open('$(find ~/.claude/plugins/cache/stellar-powers -name package.json -maxdepth 4 2>/dev/null | head -1)'))['version'])" 2>/dev/null || echo "unknown")
    cat > .stellar-powers/.active-workflow.tmp << AWEOF
-   {"workflow_id":"${WF_ID}","skill":"brainstorming","topic":"TOPIC_FROM_ARGS","step":"workflow_setup","step_number":0,"started":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","repo":"${REPO}","task_type":"unknown","sp_version":"${SP_VERSION}"}
+   {"workflow_id":"${WF_ID}","skill":"brainstorming","topic":"TOPIC_FROM_ARGS","step":"workflow_setup","step_number":0,"started":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","repo":"${REPO}","task_type":"TASK_TYPE","sp_version":"${SP_VERSION}"}
    AWEOF
    mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
    echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"workflow_started\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"brainstorming\",\"topic\":\"TOPIC_FROM_ARGS\",\"repo\":\"${REPO}\",\"sp_version\":\"${SP_VERSION}\"}}" >> .stellar-powers/workflow.jsonl
    ```
    Replace `TOPIC_FROM_ARGS` with the actual topic from the user's request.
+   Replace `TASK_TYPE` by inferring from the user's args: "feature" for new features, "bugfix" for fixes, "refactoring" for refactors, "porting" for feature porting. If unclear, default to "feature". Update `.active-workflow` with the correct task_type once determined (e.g., during clarifying questions).
 
    **Step logging** — At the start and end of each major checklist step, log step_started and step_completed events to workflow.jsonl:
    ```bash
