@@ -302,7 +302,7 @@ Replace `GATE_NAME` with e.g. `plan_review` or `execution_choice`, and `FIRST_20
 Before offering execution choice, create a partial metrics snapshot:
 ```bash
 # Create partial metrics snapshot at writing-plans stage
-SP_WF_ID="${WF_ID}" SP_REPO="${REPO}" SP_TOPIC="TOPIC" SP_VERSION="${SP_VERSION}" SP_TASK_TYPE="unknown" python3 << 'PYEOF'
+SP_WF_ID="${WF_ID}" SP_REPO="${REPO}" SP_TOPIC="TOPIC" SP_VERSION="${SP_VERSION}" SP_TASK_TYPE="${TASK_TYPE:-unknown}" python3 << 'PYEOF'
 import json, os, sys
 from datetime import datetime
 
@@ -323,19 +323,130 @@ with open(wf_file) as f:
                 events.append(evt)
         except: continue
 
-metrics_dir = os.path.join(cwd, ".stellar-powers", "metrics")
-os.makedirs(metrics_dir, exist_ok=True)
-topic = os.environ.get("SP_TOPIC", "unknown")
+# Load .active-workflow if present
+aw_path = os.path.join(cwd, ".stellar-powers", ".active-workflow")
+aw = {}
+if os.path.exists(aw_path):
+    try:
+        aw = json.load(open(aw_path))
+    except Exception:
+        pass
+
+repo = os.environ.get("SP_REPO") or aw.get("repo") or "unknown"
+task_type = os.environ.get("SP_TASK_TYPE") or aw.get("task_type") or "unknown"
+sp_version = os.environ.get("SP_VERSION") or aw.get("sp_version") or "unknown"
+topic = os.environ.get("SP_TOPIC") or aw.get("topic") or "unknown"
+
+# Extract timeline
+started = ""
+completed = ""
+duration = 0
+for e in events:
+    if e.get("event") == "skill_invocation" and not started:
+        started = e.get("ts", "")
+
+# Per-skill metrics
+skills_seen = []
+for e in events:
+    if e.get("event") == "skill_invocation":
+        s = e.get("data", {}).get("skill", "")
+        if s and s not in skills_seen:
+            skills_seen.append(s)
+
+skills_data = {}
+for skill in skills_seen:
+    skill_events = [e for e in events if e.get("data", {}).get("skill") == skill]
+    steps_completed = sum(1 for e in skill_events if e.get("event") == "step_completed")
+    steps_total = max(
+        [e.get("data", {}).get("step_number", 0) for e in skill_events
+         if e.get("event") in ("step_started", "step_completed")] or [0]
+    )
+    corrections = [
+        {"step": e["data"].get("context", ""), "feedback": e["data"].get("correction", "")}
+        for e in skill_events if e.get("event") == "user_correction"
+    ]
+    review_verdicts = [
+        e["data"].get("verdict", "") for e in events
+        if e.get("event") == "review_verdict" and e.get("workflow_id") == wf_id
+    ]
+    review_iterations = len(review_verdicts)
+    violations = {}
+    for e in events:
+        if e.get("event") == "hook_violation" and e.get("workflow_id") == wf_id:
+            vtype = e.get("data", {}).get("type", "unknown")
+            violations[vtype] = violations.get(vtype, 0) + 1
+    skills_data[skill] = {
+        "steps_completed": steps_completed,
+        "steps_total": steps_total,
+        "corrections": corrections,
+        "review_iterations": review_iterations,
+        "review_verdicts": review_verdicts,
+        "violations": [{"type": k, "count": v} for k, v in violations.items()],
+    }
+
+tasks = [
+    {"id": e["data"].get("task_id", ""), "subject": e["data"].get("task_subject", ""), "status": "completed"}
+    for e in events if e.get("event") == "task_completed"
+]
+
+user_messages = [
+    {
+        "timestamp": e.get("ts", ""),
+        "context": f"{e['data'].get('active_skill', '')}/{e['data'].get('active_step', '')}",
+        "preview": e["data"].get("prompt_preview", ""),
+    }
+    for e in events if e.get("event") == "user_message"
+]
+
+ai_responses = [
+    {
+        "timestamp": e.get("ts", ""),
+        "context": e["data"].get("active_skill", ""),
+        "preview": e["data"].get("response_preview", ""),
+    }
+    for e in events if e.get("event") == "turn_completed"
+]
+
+tool_failures = [
+    {"tool": e["data"].get("tool_name", ""), "error": e["data"].get("error_preview", "")}
+    for e in events if e.get("event") == "tool_failure"
+]
+
+artifacts = []
+for e in events:
+    if e.get("event") in ("spec_created", "plan_created"):
+        p = e.get("data", {}).get("path", "")
+        if p:
+            artifacts.append(p)
+
 pkg = {
     "package_version": "1.0",
     "workflow_id": wf_id,
     "stage": "writing-plans",
-    "stellar_powers_version": os.environ.get("SP_VERSION", "unknown"),
-    "context": {"repo": os.environ.get("SP_REPO", "unknown"), "task_type": os.environ.get("SP_TASK_TYPE", "unknown"), "skills_chain": ["brainstorming", "writing-plans"]},
-    "events_count": len(events),
-    "corrections": sum(1 for e in events if e.get("event") == "user_correction"),
-    "steps_completed": sum(1 for e in events if e.get("event") == "step_completed")
+    "stellar_powers_version": sp_version,
+    "context": {
+        "repo": repo,
+        "task_type": task_type,
+        "skills_chain": ["brainstorming", "writing-plans"],
+    },
+    "timeline": {
+        "started": started,
+        "completed": "",
+        "duration_minutes": duration,
+        "user_confirmed_complete": False,
+    },
+    "skills": skills_data,
+    "tasks": tasks,
+    "user_messages": user_messages,
+    "ai_responses": ai_responses,
+    "tool_failures": tool_failures,
+    "artifacts": artifacts,
+    "completion_feedback": "",
+    "outcome": "partial",
 }
+
+metrics_dir = os.path.join(cwd, ".stellar-powers", "metrics")
+os.makedirs(metrics_dir, exist_ok=True)
 pkg_path = os.path.join(metrics_dir, f"{datetime.utcnow().strftime('%Y-%m-%d')}-{topic}-{wf_id[:8]}-partial.json")
 # Remove old partials for this workflow
 for f_name in os.listdir(metrics_dir):
