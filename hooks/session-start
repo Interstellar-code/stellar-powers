@@ -145,9 +145,68 @@ if incomplete:
 " "$WORKFLOW_FILE" 2>/dev/null) || workflow_summary=""
 fi
 
+# Check .active-workflow lifecycle state
+active_workflow_message=""
+AW_FILE="${PWD}/.stellar-powers/.active-workflow"
+if [ -f "$AW_FILE" ]; then
+    active_workflow_message=$(python3 -c "
+import json, sys, os
+from datetime import datetime, timezone
+
+aw_path = sys.argv[1]
+wf_path = sys.argv[2]
+
+try:
+    aw = json.load(open(aw_path))
+except:
+    print('Corrupted workflow state detected at .stellar-powers/.active-workflow. Will be cleared on next skill invocation.')
+    sys.exit(0)
+
+wf_id = aw.get('workflow_id', '')
+skill = aw.get('skill', '')
+topic = aw.get('topic', '')
+started = aw.get('started', '')
+
+# Check if already completed/abandoned in workflow.jsonl
+if os.path.exists(wf_path):
+    with open(wf_path) as f:
+        for line in f:
+            try:
+                evt = json.loads(line.strip())
+                if evt.get('workflow_id') == wf_id and evt.get('event') in ('workflow_completed', 'workflow_abandoned'):
+                    print(f'Orphaned .active-workflow for completed workflow [{topic}] will be cleaned up.')
+                    sys.exit(0)
+            except:
+                continue
+
+# Check staleness (30 days)
+if started:
+    try:
+        start_dt = datetime.fromisoformat(started.replace('Z', '+00:00'))
+        days_old = (datetime.now(timezone.utc) - start_dt).days
+        if days_old > 30:
+            print(f'Stale workflow [{skill}/{topic}] started {days_old} days ago. Consider completing or abandoning it.')
+            sys.exit(0)
+    except:
+        pass
+
+print(f'Active workflow: {skill}/{topic} (started {started[:10]})')
+" "$AW_FILE" "$WORKFLOW_FILE" 2>/dev/null) || active_workflow_message=""
+fi
+
+# Check for held workflows
+held_message=""
+held_files=$(ls "${PWD}/.stellar-powers/.active-workflow.held."* 2>/dev/null) || true
+if [ -n "$held_files" ]; then
+    held_count=$(echo "$held_files" | wc -l | tr -d ' ')
+    held_message="  ${held_count} workflow(s) on hold."
+fi
+
 migration_escaped=$(escape_for_json "$migration_message")
 workflow_escaped=$(escape_for_json "$workflow_summary")
-session_context="<EXTREMELY_IMPORTANT>\nYou have stellar powers.\n\n**Below is the full content of your 'stellar-powers:using-stellar-powers' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${using_superpowers_escaped}\n\n${warning_escaped}${migration_escaped}\n\n${workflow_escaped}\n</EXTREMELY_IMPORTANT>"
+active_workflow_escaped=$(escape_for_json "$active_workflow_message")
+held_escaped=$(escape_for_json "$held_message")
+session_context="<EXTREMELY_IMPORTANT>\nYou have stellar powers.\n\n**Below is the full content of your 'stellar-powers:using-stellar-powers' skill - your introduction to using skills. For all other skills, use the 'Skill' tool:**\n\n${using_superpowers_escaped}\n\n${warning_escaped}${migration_escaped}\n\n${workflow_escaped}\n\n${active_workflow_escaped}${held_escaped}\n</EXTREMELY_IMPORTANT>"
 
 # Output context injection as JSON.
 # Cursor hooks expect additional_context.
