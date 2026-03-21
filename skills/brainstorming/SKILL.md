@@ -28,6 +28,56 @@ You MUST create a task for each of these items and complete them in order:
    echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"skill_invocation\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"skill\":\"brainstorming\",\"args\":\"$(echo "$ARGS" | sed 's/"/\\\\"/g')\"}}" >> .stellar-powers/workflow.jsonl
    ```
    Also check `.stellar-powers/workflow.jsonl` for incomplete brainstorming workflows. If found, load the most recent workflow's context (spec path, last event) to inform your work. Do not re-prompt the user — session-start already surfaced incomplete work.
+
+   **Workflow gate** — After generating WF_ID, check for an existing active workflow:
+   ```bash
+   AW_FILE=".stellar-powers/.active-workflow"
+   if [ -f "$AW_FILE" ]; then
+     AW_JSON=$(cat "$AW_FILE" 2>/dev/null)
+     AW_VALID=$(echo "$AW_JSON" | python3 -c "import json,sys; json.load(sys.stdin); print('yes')" 2>/dev/null)
+     if [ "$AW_VALID" != "yes" ]; then
+       echo "Corrupted workflow state detected and cleared. Starting fresh."
+       rm -f "$AW_FILE"
+     else
+       AW_WF_ID=$(echo "$AW_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin).get('workflow_id',''))")
+       AW_TOPIC=$(echo "$AW_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin).get('topic',''))")
+       AW_SKILL=$(echo "$AW_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin).get('skill',''))")
+       ALREADY_DONE=$(grep -c "\"workflow_completed\".*${AW_WF_ID}\|\"workflow_abandoned\".*${AW_WF_ID}" .stellar-powers/workflow.jsonl 2>/dev/null || echo 0)
+       if [ "$ALREADY_DONE" -gt 0 ]; then
+         rm -f "$AW_FILE"
+       else
+         # Different topic — present options to user
+         echo "There is an active workflow (skill=${AW_SKILL}, topic=${AW_TOPIC}). Options: [complete] finish it first, [abandon] discard it, [hold] park it and start new, [resume] switch to it."
+         # Act on user's choice before continuing
+       fi
+     fi
+   fi
+   HELD_COUNT=$(ls .stellar-powers/.active-workflow.held.* 2>/dev/null | wc -l | tr -d ' ')
+   if [ "$HELD_COUNT" -gt 0 ]; then
+     echo "Note: ${HELD_COUNT} workflow(s) on hold."
+   fi
+   ```
+
+   **Create .active-workflow** — After the gate passes, write the active workflow file and log workflow_started:
+   ```bash
+   REPO=$(basename $(git remote get-url origin 2>/dev/null | sed 's/.git$//') 2>/dev/null || basename $(pwd))
+   SP_VERSION=$(python3 -c "import json; print(json.load(open('$(find ~/.claude/plugins/cache/stellar-powers -name package.json -maxdepth 4 2>/dev/null | head -1)'))['version'])" 2>/dev/null || echo "unknown")
+   cat > .stellar-powers/.active-workflow.tmp << AWEOF
+   {"workflow_id":"${WF_ID}","skill":"brainstorming","topic":"TOPIC_FROM_ARGS","step":"workflow_setup","step_number":0,"started":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","repo":"${REPO}","task_type":"unknown","sp_version":"${SP_VERSION}"}
+   AWEOF
+   mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+   echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"workflow_started\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"brainstorming\",\"topic\":\"TOPIC_FROM_ARGS\",\"repo\":\"${REPO}\",\"sp_version\":\"${SP_VERSION}\"}}" >> .stellar-powers/workflow.jsonl
+   ```
+   Replace `TOPIC_FROM_ARGS` with the actual topic from the user's request.
+
+   **Step logging** — At the start and end of each major checklist step, log step_started and step_completed events to workflow.jsonl:
+   ```bash
+   # Log at step start (replace STEP_NAME and N with actual values)
+   echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"step_started\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"brainstorming\",\"step\":\"STEP_NAME\",\"step_number\":N}}" >> .stellar-powers/workflow.jsonl
+
+   # Log at step end
+   echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"step_completed\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"brainstorming\",\"step\":\"STEP_NAME\",\"step_number\":N}}" >> .stellar-powers/workflow.jsonl
+   ```
 1. **Explore project context** — check files, docs, recent commits
 2. **Offer visual companion** — if the topic involves UI, frontend, or any visual output, you MUST offer the visual companion (mockups are critical for alignment on UI work). For non-visual topics, offer only if diagrams would help. This is its own message, not combined with a clarifying question. See the Visual Companion section below.
 3. **Ask clarifying questions** — check for cross-project porting intent first (see "Cross-project feature porting" section), then ask one at a time to understand purpose/constraints/success criteria
@@ -171,8 +221,27 @@ After the spec review loop passes, ask the user to review the written spec befor
 
 Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
 
+**Correction capture:** If the user's response at any review gate (design section approval, spec review, user review) is NOT a simple approval (yes/looks good/proceed), log a user_correction event before acting on their feedback:
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"user_correction\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"brainstorming\",\"context\":\"GATE_NAME\",\"correction\":\"FIRST_200_CHARS_OF_FEEDBACK\",\"category\":\"correction\"}}" >> .stellar-powers/workflow.jsonl
+```
+Replace `GATE_NAME` with the gate name (e.g., `design_section_approval`, `spec_review`, `user_review`) and `FIRST_200_CHARS_OF_FEEDBACK` with the first 200 characters of the user's feedback.
+
 **Implementation:**
 
+- Before invoking writing-plans, update .active-workflow for the handoff:
+  ```bash
+  # Update .active-workflow for handoff to writing-plans
+  ORIGINAL_START=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('started',''))" 2>/dev/null)
+  REPO=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('repo',''))" 2>/dev/null)
+  TASK_TYPE=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('task_type',''))" 2>/dev/null)
+  SP_VERSION=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('sp_version',''))" 2>/dev/null)
+  cat > .stellar-powers/.active-workflow.tmp << AWEOF
+  {"workflow_id":"${WF_ID}","skill":"writing-plans","topic":"TOPIC","step":"handoff","step_number":0,"started":"${ORIGINAL_START}","repo":"${REPO}","task_type":"${TASK_TYPE}","sp_version":"${SP_VERSION}"}
+  AWEOF
+  mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+  ```
+  Replace `TOPIC` with the actual topic.
 - Invoke the writing-plans skill to create a detailed implementation plan
 - Do NOT invoke any other skill. writing-plans is the next step.
 

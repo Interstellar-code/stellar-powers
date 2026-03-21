@@ -28,6 +28,38 @@ mkdir -p .stellar-powers/specs .stellar-powers/plans
 echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"skill_invocation\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"skill\":\"writing-plans\",\"args\":\"\"}}" >> .stellar-powers/workflow.jsonl
 ```
 
+**Chain detection** — Before using the generated WF_ID, check if this skill was invoked from brainstorming (i.e., .active-workflow exists with skill=brainstorming). If so, inherit the existing workflow_id:
+```bash
+if [ -f ".stellar-powers/.active-workflow" ]; then
+  EXISTING_SKILL=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('skill',''))" 2>/dev/null)
+  if [ "$EXISTING_SKILL" = "brainstorming" ]; then
+    WF_ID=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('workflow_id',''))" 2>/dev/null)
+  fi
+fi
+```
+
+**Update .active-workflow** — After chain detection, update (or create) .active-workflow with skill="writing-plans":
+```bash
+REPO=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('repo',''))" 2>/dev/null || basename $(pwd))
+ORIGINAL_START=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('started',''))" 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)
+TASK_TYPE=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('task_type',''))" 2>/dev/null || echo "unknown")
+SP_VERSION=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('sp_version',''))" 2>/dev/null || echo "unknown")
+cat > .stellar-powers/.active-workflow.tmp << AWEOF
+{"workflow_id":"${WF_ID}","skill":"writing-plans","topic":"TOPIC","step":"workflow_setup","step_number":0,"started":"${ORIGINAL_START}","repo":"${REPO}","task_type":"${TASK_TYPE}","sp_version":"${SP_VERSION}"}
+AWEOF
+mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+```
+Replace `TOPIC` with the actual topic being planned.
+
+**Step logging** — At the start and end of each major step (scope check, file structure, task writing, plan review, execution handoff), log step_started and step_completed events:
+```bash
+# Log at step start (replace STEP_NAME and N with actual values)
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"step_started\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"writing-plans\",\"step\":\"STEP_NAME\",\"step_number\":N}}" >> .stellar-powers/workflow.jsonl
+
+# Log at step end
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"step_completed\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"writing-plans\",\"step\":\"STEP_NAME\",\"step_number\":N}}" >> .stellar-powers/workflow.jsonl
+```
+
 Check `.stellar-powers/workflow.jsonl` for incomplete writing-plans workflows. If found, load the most recent workflow's context to inform your work. Do not re-prompt the user.
 
 After saving the plan, log plan creation:
@@ -200,6 +232,12 @@ After writing the complete plan:
 - If loop exceeds 3 iterations, surface to human for guidance
 - Reviewers are advisory — explain disagreements if you believe feedback is incorrect
 
+**Correction capture at plan review gates:** If at any review gate (plan review loop, execution choice) the user's response is NOT a simple approval, log a user_correction event before acting on their feedback:
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"user_correction\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"writing-plans\",\"context\":\"GATE_NAME\",\"correction\":\"FIRST_200_CHARS_OF_FEEDBACK\",\"category\":\"correction\"}}" >> .stellar-powers/workflow.jsonl
+```
+Replace `GATE_NAME` with e.g. `plan_review` or `execution_choice`, and `FIRST_200_CHARS_OF_FEEDBACK` with the first 200 characters of the user's feedback.
+
 ## Execution Handoff
 
 After saving the plan, offer execution choice:
@@ -215,7 +253,29 @@ After saving the plan, offer execution choice:
 **If Subagent-Driven chosen:**
 - **REQUIRED SUB-SKILL:** Use stellar-powers:subagent-driven-development
 - Fresh subagent per task + two-stage review
+- Before invoking, update .active-workflow for handoff:
+  ```bash
+  ORIGINAL_START=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('started',''))" 2>/dev/null)
+  REPO=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('repo',''))" 2>/dev/null)
+  TASK_TYPE=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('task_type',''))" 2>/dev/null)
+  SP_VERSION=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('sp_version',''))" 2>/dev/null)
+  cat > .stellar-powers/.active-workflow.tmp << AWEOF
+  {"workflow_id":"${WF_ID}","skill":"subagent-driven-development","topic":"TOPIC","step":"handoff","step_number":0,"started":"${ORIGINAL_START}","repo":"${REPO}","task_type":"${TASK_TYPE}","sp_version":"${SP_VERSION}"}
+  AWEOF
+  mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+  ```
 
 **If Inline Execution chosen:**
 - **REQUIRED SUB-SKILL:** Use stellar-powers:executing-plans
 - Batch execution with checkpoints for review
+- Before invoking, update .active-workflow for handoff:
+  ```bash
+  ORIGINAL_START=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('started',''))" 2>/dev/null)
+  REPO=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('repo',''))" 2>/dev/null)
+  TASK_TYPE=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('task_type',''))" 2>/dev/null)
+  SP_VERSION=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('sp_version',''))" 2>/dev/null)
+  cat > .stellar-powers/.active-workflow.tmp << AWEOF
+  {"workflow_id":"${WF_ID}","skill":"executing-plans","topic":"TOPIC","step":"handoff","step_number":0,"started":"${ORIGINAL_START}","repo":"${REPO}","task_type":"${TASK_TYPE}","sp_version":"${SP_VERSION}"}
+  AWEOF
+  mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
+  ```
