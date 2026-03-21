@@ -1,0 +1,39 @@
+{
+  "name": "metrics-null-field-fallback",
+  "description": "Packager handles null values in .active-workflow and workflow_completed event — fields must not be null/None in output",
+  "setup": {
+    "active_workflow": {
+      "workflow_id": "TEST-007",
+      "skill": "brainstorming",
+      "topic": "null-fallback-test",
+      "step": "workflow_setup",
+      "step_number": 0,
+      "started": "2026-03-21T10:00:00Z",
+      "repo": null,
+      "task_type": null,
+      "sp_version": null
+    },
+    "workflow_events": [
+      {"event": "skill_invocation", "ts": "2026-03-21T10:00:00Z", "data": {"skill": "brainstorming", "args": "null-fallback-test"}},
+      {"event": "workflow_completed","ts": "2026-03-21T10:30:00Z", "data": {"skill": "brainstorming", "duration_minutes": null, "steps_completed": 1, "steps_total": 9, "outcome": null, "completion_feedback": null}}
+    ]
+  },
+  "hooks_to_test": [],
+  "scripts_to_run": [
+    {
+      "env": {
+        "SP_WF_ID": "TEST-007",
+        "SP_REPO": "",
+        "SP_TASK_TYPE": "",
+        "SP_VERSION": "",
+        "SP_TOPIC": "null-fallback-test"
+      },
+      "command": "python3 {TESTS_DIR}/test-packager.py"
+    }
+  ],
+  "expected": {
+    "metrics_package_exists": true,
+    "metrics_package_valid_json": true,
+    "metrics_fields_not_null": ["repo", "sp_version", "task_type", "duration_minutes", "outcome"]
+  }
+}

@@ -43,10 +43,10 @@ if os.path.exists(aw_path):
     except Exception:
         pass
 
-repo = os.environ.get("SP_REPO") or aw.get("repo", "unknown")
-task_type = os.environ.get("SP_TASK_TYPE") or aw.get("task_type", "unknown")
-sp_version = os.environ.get("SP_VERSION") or aw.get("sp_version", "unknown")
-topic = os.environ.get("SP_TOPIC") or aw.get("topic", "unknown")
+repo = os.environ.get("SP_REPO") or aw.get("repo") or "unknown"
+task_type = os.environ.get("SP_TASK_TYPE") or aw.get("task_type") or "unknown"
+sp_version = os.environ.get("SP_VERSION") or aw.get("sp_version") or "unknown"
+topic = os.environ.get("SP_TOPIC") or aw.get("topic") or "unknown"
 
 # Extract timeline
 started = ""
@@ -60,9 +60,9 @@ for e in events:
     if e.get("event") == "workflow_completed":
         completed = e.get("ts", "")
         d = e.get("data", {})
-        duration = d.get("duration_minutes", 0)
-        completion_feedback = d.get("completion_feedback", "")
-        outcome = d.get("outcome", "success")
+        duration = d.get("duration_minutes") or 0
+        completion_feedback = d.get("completion_feedback") or ""
+        outcome = d.get("outcome") or "success"
 
 if started and completed:
     try:
@@ -135,6 +135,11 @@ ai_responses = [
     for e in events if e.get("event") == "turn_completed"
 ]
 
+tool_failures = [
+    {"tool": e["data"].get("tool_name", ""), "error": e["data"].get("error_preview", "")}
+    for e in events if e.get("event") == "tool_failure"
+]
+
 artifacts = []
 for e in events:
     if e.get("event") in ("spec_created", "plan_created"):
@@ -161,6 +166,7 @@ package = {
     "tasks": tasks,
     "user_messages": user_messages,
     "ai_responses": ai_responses,
+    "tool_failures": tool_failures,
     "artifacts": artifacts,
     "completion_feedback": completion_feedback,
     "outcome": outcome,

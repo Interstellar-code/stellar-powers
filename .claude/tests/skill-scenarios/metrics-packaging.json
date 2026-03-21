@@ -17,7 +17,9 @@
       {"event": "skill_invocation", "ts": "2026-03-21T10:00:00Z", "data": {"skill": "brainstorming", "args": "packaging-test"}},
       {"event": "step_started",     "ts": "2026-03-21T10:01:00Z", "data": {"skill": "brainstorming", "step": "explore_context", "step_number": 1}},
       {"event": "step_completed",   "ts": "2026-03-21T10:05:00Z", "data": {"skill": "brainstorming", "step": "explore_context", "step_number": 1}},
-      {"event": "user_message",     "ts": "2026-03-21T10:10:00Z", "data": {"skill": "brainstorming", "step": "clarifying_questions", "prompt_preview": "yes looks good"}},
+      {"event": "user_message",     "ts": "2026-03-21T10:10:00Z", "data": {"active_skill": "brainstorming", "active_step": "clarifying_questions", "prompt_preview": "yes looks good"}},
+      {"event": "turn_completed",   "ts": "2026-03-21T10:11:00Z", "data": {"active_skill": "brainstorming", "response_preview": "here is the output"}},
+      {"event": "tool_failure",     "ts": "2026-03-21T10:12:00Z", "data": {"tool_name": "Bash", "error_preview": "command not found"}},
       {"event": "workflow_completed","ts": "2026-03-21T10:30:00Z", "data": {"skill": "brainstorming", "duration_minutes": 30, "steps_completed": 1, "steps_total": 9, "outcome": "success", "completion_feedback": "all done"}}
     ]
   },
@@ -38,6 +40,7 @@
     "metrics_package_exists": true,
     "metrics_package_valid_json": true,
     "metrics_fields_not_unknown": ["repo", "sp_version", "task_type"],
-    "duration_minutes_gt_zero": true
+    "duration_minutes_gt_zero": true,
+    "metrics_arrays_not_empty": ["user_messages", "ai_responses", "tool_failures"]
   }
 }

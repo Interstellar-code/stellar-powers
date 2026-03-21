@@ -223,6 +223,46 @@ def check_assertions(scenario: dict, cwd: Path) -> tuple[bool, list[str]]:
                 if val is None or val == "unknown":
                     failures.append(f"metrics_fields_not_unknown: field '{field}' is '{val}'")
 
+    # metrics_fields_not_null: [field_name, ...] — in context object of first metrics package, value must not be None/null
+    not_null_fields = expected.get("metrics_fields_not_null", [])
+    if not_null_fields:
+        metrics_dir = cwd / ".stellar-powers" / "metrics"
+        pkg_files = list(metrics_dir.glob("*.json")) if metrics_dir.exists() else []
+        if not pkg_files:
+            failures.append("metrics_fields_not_null: no metrics package found to check")
+        else:
+            pkg = json.loads(pkg_files[0].read_text())
+            field_map = {
+                "repo": pkg.get("context", {}).get("repo"),
+                "sp_version": pkg.get("stellar_powers_version"),
+                "task_type": pkg.get("context", {}).get("task_type"),
+                "duration_minutes": pkg.get("timeline", {}).get("duration_minutes"),
+                "outcome": pkg.get("outcome"),
+            }
+            for field in not_null_fields:
+                val = field_map.get(field)
+                if val is None:
+                    failures.append(f"metrics_fields_not_null: field '{field}' is None/null")
+
+    # metrics_arrays_not_empty: [field_path, ...] — dot-path into first metrics package must be a non-empty list
+    for field_path in expected.get("metrics_arrays_not_empty", []):
+        metrics_dir = cwd / ".stellar-powers" / "metrics"
+        pkg_files = list(metrics_dir.glob("*.json")) if metrics_dir.exists() else []
+        if not pkg_files:
+            failures.append(f"metrics_arrays_not_empty: no metrics package found to check '{field_path}'")
+        else:
+            pkg = json.loads(pkg_files[0].read_text())
+            parts = field_path.split(".")
+            val = pkg
+            for part in parts:
+                if isinstance(val, dict):
+                    val = val.get(part)
+                else:
+                    val = None
+                    break
+            if not isinstance(val, list) or len(val) == 0:
+                failures.append(f"metrics_arrays_not_empty: field '{field_path}' is {val!r} (expected non-empty list)")
+
     # duration_minutes_gt_zero: bool — timeline.duration_minutes > 0 in first metrics package
     if expected.get("duration_minutes_gt_zero"):
         metrics_dir = cwd / ".stellar-powers" / "metrics"
