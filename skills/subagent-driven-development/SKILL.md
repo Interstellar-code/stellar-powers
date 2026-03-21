@@ -139,6 +139,80 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 
 **Never** ignore an escalation or force the same model to retry without changes. If the implementer said it's stuck, something needs to change.
 
+## Task Batching
+
+Group consecutive small tasks into batches of 2-4 per sub-agent to reduce dispatch overhead. Solo tasks always get their own sub-agent.
+
+### Reading Annotations
+
+Plans annotated by `writing-plans` include `[batch]` or `[solo]` in each task heading:
+
+    ### Task 1: Install deps [batch]
+    ### Task 2: Add i18n keys [batch]
+    ### Task 3: Design API contract [solo]
+
+**Fallback for unannotated tasks:** If a task has no annotation, classify it using the complexity signals:
+- **Batch** if ALL: touches 1-2 files, mechanical steps, no integration concerns, no judgment/architecture language, no dependencies on other tasks
+- **Solo** if ANY: touches 3+ files, multi-file coordination, judgment/design language, has dependencies, modifies shared interfaces
+
+This applies per-task — a plan can have a mix of annotated and unannotated tasks.
+
+### Grouping Rules
+
+1. Group consecutive `[batch]` tasks into batches of 2-4
+2. Never exceed 4 tasks per batch (keeps combined prompt under ~60k tokens and reviewer diffs manageable)
+3. **Single trailing batch task:** If a consecutive group has exactly 1 `[batch]` task, dispatch it as solo — no efficiency benefit from a 1-task batch
+4. `[solo]` tasks always get their own sub-agent
+5. **Dependency detection:** A task has a dependency if: (a) it references another task by number (e.g., "uses the schema from Task 2"), (b) its Files section lists a file created by a prior task, or (c) its steps reference output from a prior task. Promote dependent `[batch]` tasks to `[solo]`
+6. Batches are formed from consecutive tasks only — do not reorder
+7. **Token budget:** Before dispatching a batch, estimate combined prompt size. If >60k tokens, split into smaller batches
+
+### Batch Dispatch
+
+1. Record current HEAD as `BASE_SHA` (the commit immediately before any task in the batch) before dispatching
+2. Read `./implementer-prompt.md` — use the **Multi-Task Variant** section for batched dispatch
+3. Construct prompt with all batch tasks, shared context, and Library References
+4. Dispatch via Agent tool with `model=sonnet`
+
+### Parsing Implementer Report
+
+The batched implementer returns per-task status in this format:
+
+    - Task 1: DONE — sha: abc1234f
+    - Task 2: DONE_WITH_CONCERNS — sha: d9e12345 — note: concern text
+    - Task 3: BLOCKED — reason: why it failed
+
+Parse rules:
+- DONE / DONE_WITH_CONCERNS: extract the SHA, store for reviewer
+- BLOCKED: no SHA — mark for re-dispatch or escalation
+- **If parsing fails** (format drift, partial output): fall back to `git log --oneline -N` to extract last N commits, match by commit message. If that also fails, report parsing failure to user and skip review for unparseable tasks
+
+### Batched Review
+
+**BLOCKED tasks:** Do not pass to reviewers. Instead:
+- Log the block reason
+- Report to user: "Task {N} was blocked: {reason}. Re-dispatch as solo, or skip?"
+- User decides
+
+**Completed tasks (DONE / DONE_WITH_CONCERNS):** Two-stage review using one reviewer per stage:
+
+**Stage 1 — Spec compliance:** dispatch `./spec-reviewer-prompt.md` with all completed task descriptions + per-task SHAs. Reviewer delivers per-task verdicts.
+
+**Stage 2 — Code quality:** dispatch `./code-quality-reviewer-prompt.md` with combined diff (`BASE_SHA` → final commit SHA). Reviewer delivers per-task verdicts.
+
+Verdict format:
+
+    Task 1: PASS
+    Task 2: PASS
+    Task 3: ISSUES — [specific issues]
+
+**If ISSUES found:** dispatch fix sub-agent for just the failing task(s). Re-review only the fixed task(s) — tasks that passed are NOT re-reviewed.
+
+**Partial batch failure** (e.g., Task 1 DONE, Task 2 BLOCKED, Task 3 DONE):
+- Tasks 1 and 3 proceed through normal review
+- Task 2 handled via BLOCKED path
+- If Task 2 is later re-dispatched and completed, it gets its own solo review pass
+
 ## Prompt Templates
 
 **MANDATORY:** Before dispatching any subagent, Read the corresponding prompt template file using the Read tool. Use the template's contents as the subagent prompt. Do NOT construct your own ad-hoc prompts — the templates contain persona injections (Software Architect, Code Reviewer) that ensure expert-level review quality.
