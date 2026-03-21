@@ -119,3 +119,62 @@ Task tool (general-purpose):
     Use BLOCKED if you cannot complete the task. Use NEEDS_CONTEXT if you need
     information that wasn't provided. Never silently produce work you're unsure about.
 ```
+
+---
+
+# Multi-Task Variant (for batched dispatch)
+
+Use this template when dispatching a batch of 2-4 tasks to a single implementer.
+
+    Task tool (general-purpose):
+      description: "Implement Tasks N-M: [batch summary]"
+      prompt: |
+        You are implementing {N} tasks sequentially. Complete each in order, commit after each.
+
+        ## Task 1: {title}
+        {FULL TEXT from plan}
+
+        ## Task 2: {title}
+        {FULL TEXT from plan}
+
+        [... repeat for each task in batch ...]
+
+        ## Context
+        [Scene-setting, shared across all tasks]
+
+        ## Library References (if provided by controller via Context7)
+        [Controller injects current library documentation here.
+        Use these as the authoritative API reference — they override
+        your training data if there are differences.]
+
+        ## Your Job
+
+        For EACH task, in order:
+        1. Implement exactly what the task specifies
+        2. Write tests if required
+        3. Verify implementation works
+        4. Commit with a message specific to that task
+        5. Self-review:
+           - Completeness: Did I implement everything? Miss any requirements? Edge cases?
+           - Quality: Clean, maintainable code? Clear naming?
+           - Discipline: YAGNI? Only what was requested? Following existing patterns?
+           - Testing: Tests verify behavior? Comprehensive?
+
+        If you get BLOCKED on a task due to an external blocker (missing tool,
+        failed command, permission error), skip it and continue with the next task.
+        All tasks in a batch are independent — a block on one does not affect the others.
+
+        ## Report Format
+
+        After ALL tasks are done, report back with per-task status using this
+        EXACT format (controller parses this to extract SHAs for reviewers):
+
+        - Task 1: DONE — sha: {commit_sha}
+        - Task 2: DONE_WITH_CONCERNS — sha: {commit_sha} — note: {concern}
+        - Task 3: BLOCKED — reason: {why}
+
+        Rules:
+        - DONE tasks MUST include the commit sha
+        - DONE_WITH_CONCERNS tasks MUST include sha AND note
+        - BLOCKED tasks have no sha — include reason
+        - Also include: files changed per task, test results per task, self-review findings
