@@ -134,6 +134,20 @@ digraph process {
 }
 ```
 
+**Logging review verdicts (solo tasks):** After each reviewer subagent returns its verdict, log it immediately before proceeding:
+
+- After spec reviewer returns verdict:
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"review_verdict\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"verdict\":\"approved|issues_found\",\"reviewer_persona\":\"spec-reviewer\",\"iteration\":1,\"spec_path\":\"PLAN_PATH\"}}" >> .stellar-powers/workflow.jsonl
+```
+
+- After code quality reviewer returns verdict:
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"review_verdict\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"verdict\":\"approved|issues_found\",\"reviewer_persona\":\"code-quality-reviewer\",\"iteration\":1,\"spec_path\":\"PLAN_PATH\"}}" >> .stellar-powers/workflow.jsonl
+```
+
+Replace `approved|issues_found` with the actual verdict, and increment `iteration` on each re-review loop.
+
 ## Model Selection
 
 Use the least powerful model that can handle each role to conserve cost and increase speed.
@@ -228,7 +242,17 @@ Parse rules:
 
 **Stage 1 — Spec compliance:** dispatch `./spec-reviewer-prompt.md` with all completed task descriptions + per-task SHAs. Reviewer delivers per-task verdicts.
 
+After receiving the Stage 1 verdict, log it immediately:
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"review_verdict\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"verdict\":\"approved|issues_found\",\"reviewer_persona\":\"spec-reviewer\",\"iteration\":1,\"spec_path\":\"PLAN_PATH\"}}" >> .stellar-powers/workflow.jsonl
+```
+
 **Stage 2 — Code quality:** dispatch `./code-quality-reviewer-prompt.md` with combined diff (`BASE_SHA` → final commit SHA). Reviewer delivers per-task verdicts.
+
+After receiving the Stage 2 verdict, log it immediately:
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"review_verdict\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"verdict\":\"approved|issues_found\",\"reviewer_persona\":\"code-quality-reviewer\",\"iteration\":1,\"spec_path\":\"PLAN_PATH\"}}" >> .stellar-powers/workflow.jsonl
+```
 
 Verdict format:
 
@@ -295,8 +319,12 @@ Implementer: "Got it. Implementing now..."
 [Dispatch spec compliance reviewer]
 Spec reviewer: ✅ Spec compliant - all requirements met, nothing extra
 
+[Log spec reviewer verdict to workflow.jsonl using the review_verdict template above]
+
 [Get git SHAs, dispatch code quality reviewer]
 Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
+
+[Log code quality reviewer verdict to workflow.jsonl using the review_verdict template above]
 
 [Mark Task 1 complete]
 
@@ -323,6 +351,8 @@ Implementer: Removed --json flag, added progress reporting
 [Spec reviewer reviews again]
 Spec reviewer: ✅ Spec compliant now
 
+[Log spec reviewer verdict to workflow.jsonl using the review_verdict template above]
+
 [Dispatch code quality reviewer]
 Code reviewer: Strengths: Solid. Issues (Important): Magic number (100)
 
@@ -331,6 +361,8 @@ Implementer: Extracted PROGRESS_INTERVAL constant
 
 [Code reviewer reviews again]
 Code reviewer: ✅ Approved
+
+[Log code quality reviewer verdict to workflow.jsonl using the review_verdict template above]
 
 [Mark Task 2 complete]
 
