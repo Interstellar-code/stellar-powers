@@ -10,6 +10,16 @@
 
 **Spec:** `.stellar-powers/specs/2026-03-21-self-improving-capabilities-design.md`
 
+**Commit strategy:** Group related tasks into fewer commits to avoid excessive git history. Suggested grouping:
+- Tasks 1-2: Foundation (snippets + hooks.json) → 1 commit
+- Tasks 3-5: All new hook scripts → 1 commit
+- Tasks 6-7: Existing hook modifications → 1 commit
+- Tasks 8-9: Send-feedback skill + skills table → 1 commit
+- Tasks 10-11: Handoff skills (brainstorming + writing-plans) → 1 commit
+- Tasks 12-13: Terminal skills (SDD + executing-plans + TDD + finishing-branch) → 1 commit
+- Task 14: Tests → 1 commit
+- Task 15: Manifests and docs → 1 commit
+
 ---
 
 ## File Structure
@@ -24,6 +34,9 @@ hooks/
 ├── subagent-stop                 # CREATE — new hook script
 ├── stop                          # CREATE — new hook script
 ├── post-tool-use-failure         # CREATE — new hook script
+
+.stellar-powers/
+├── .gitignore                    # CREATE — gitignore metrics/ and .active-workflow*
 
 skills/
 ├── _shared/
@@ -108,25 +121,30 @@ is_feedback_enabled() {
 
 ## Read Active Workflow
 
-Used by hooks to get current workflow context.
+Used by hooks to get current workflow context. Uses a temp file instead of eval to avoid shell injection.
 
 \`\`\`bash
-# Read .active-workflow and set variables. Returns 1 if no active workflow.
+# Read .active-workflow fields into AW_* variables. Returns 1 if no active workflow.
 read_active_workflow() {
   local aw_file="${cwd}/.stellar-powers/.active-workflow"
   if [ ! -f "$aw_file" ]; then
     return 1
   fi
-  # Parse JSON fields
-  eval "$(python3 -c "
-import json, sys
+  # Parse JSON safely — write to temp file, source it
+  local tmp_vars=$(mktemp)
+  python3 -c "
+import json, sys, re
 try:
-    d = json.load(open('$aw_file'))
+    d = json.load(open('${aw_file}'))
     for k, v in d.items():
-        print(f'AW_{k.upper()}=\"{v}\"')
+        # Sanitize: only allow alphanumeric, dash, underscore, dot, colon, space
+        safe_v = re.sub(r'[^a-zA-Z0-9._: /-]', '', str(v))
+        print(f'AW_{k.upper()}=\"{safe_v}\"')
 except:
     sys.exit(1)
-" 2>/dev/null)" || return 1
+" > "$tmp_vars" 2>/dev/null || { rm -f "$tmp_vars"; return 1; }
+  source "$tmp_vars"
+  rm -f "$tmp_vars"
   return 0
 }
 \`\`\`
@@ -141,7 +159,7 @@ write_wf_event() {
   local target_cwd="$1" event="$2" wf_id="$3" data="$4"
   local wf_file="${target_cwd}/.stellar-powers/workflow.jsonl"
   mkdir -p "${target_cwd}/.stellar-powers"
-  echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"${event}\",\"workflow_id\":\"${wf_id}\",\"session\":\"\",\"data\":${data}}" >> "$wf_file"
+  echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"${event}\",\"workflow_id\":\"${wf_id}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":${data}}" >> "$wf_file"
 }
 \`\`\`
 
@@ -183,10 +201,10 @@ fi
 
 \`\`\`bash
 # Log step start. Usage in skill: run this bash before each step
-echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"step_started\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"skill\":\"SKILL_NAME\",\"step\":\"STEP_NAME\",\"step_number\":N}}" >> .stellar-powers/workflow.jsonl
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"step_started\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"SKILL_NAME\",\"step\":\"STEP_NAME\",\"step_number\":N}}" >> .stellar-powers/workflow.jsonl
 
 # Log step complete. Usage in skill: run this bash after each step
-echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"step_completed\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"skill\":\"SKILL_NAME\",\"step\":\"STEP_NAME\",\"step_number\":N}}" >> .stellar-powers/workflow.jsonl
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"step_completed\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"SKILL_NAME\",\"step\":\"STEP_NAME\",\"step_number\":N}}" >> .stellar-powers/workflow.jsonl
 \`\`\`
 
 ## Completion Checkpoint (for terminal skills)
@@ -196,7 +214,7 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"step_completed\",\"
 # This is a prompt template — the skill presents this to the user and acts on the response
 
 # On user confirming complete:
-echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"workflow_completed\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"skill\":\"SKILL_NAME\",\"duration_minutes\":DURATION,\"steps_completed\":N,\"steps_total\":TOTAL,\"outcome\":\"success\",\"completion_feedback\":\"USER_FEEDBACK\"}}" >> .stellar-powers/workflow.jsonl
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"workflow_completed\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"SKILL_NAME\",\"duration_minutes\":DURATION,\"steps_completed\":N,\"steps_total\":TOTAL,\"outcome\":\"success\",\"completion_feedback\":\"USER_FEEDBACK\"}}" >> .stellar-powers/workflow.jsonl
 
 # Package metrics (use the Metrics Packaging snippet below)
 # Prune workflow.jsonl
@@ -205,16 +223,20 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"workflow_completed\
 
 ## Metrics Packaging
 
+Skills pass the workflow_id as an environment variable `SP_WF_ID` before calling this script.
+
 \`\`\`bash
-# Package workflow metrics into a JSON file
-# Run after workflow_completed event is logged
-python3 << 'PYEOF'
+# Package workflow metrics into a structured JSON file
+# Usage: SP_WF_ID="$WF_ID" python3 << 'PYEOF'
 import json, os, sys
 from datetime import datetime
 
 cwd = os.getcwd()
 wf_file = os.path.join(cwd, ".stellar-powers", "workflow.jsonl")
-wf_id = "WORKFLOW_ID"  # replaced by skill
+wf_id = os.environ.get("SP_WF_ID", "")
+if not wf_id:
+    print("ERROR: SP_WF_ID not set", file=sys.stderr)
+    sys.exit(1)
 
 events = []
 with open(wf_file) as f:
@@ -229,26 +251,127 @@ with open(wf_file) as f:
         except:
             continue
 
-# Build package from events
+# Build structured package matching spec Component 4
+aw_path = os.path.join(cwd, ".stellar-powers", ".active-workflow")
+aw = {}
+if os.path.exists(aw_path):
+    try:
+        aw = json.load(open(aw_path))
+    except:
+        pass
+
+# Extract timeline
+started = ""
+completed = ""
+duration = 0
+completion_feedback = ""
+outcome = "unknown"
+for e in events:
+    if e.get("event") == "skill_invocation" and not started:
+        started = e.get("ts", "")
+    if e.get("event") == "workflow_completed":
+        completed = e.get("ts", "")
+        d = e.get("data", {})
+        duration = d.get("duration_minutes", 0)
+        completion_feedback = d.get("completion_feedback", "")
+        outcome = d.get("outcome", "success")
+
+# Extract skills chain
+skills_seen = []
+for e in events:
+    if e.get("event") == "skill_invocation":
+        s = e.get("data", {}).get("skill", "")
+        if s and s not in skills_seen:
+            skills_seen.append(s)
+
+# Extract per-skill metrics
+skills_data = {}
+for skill in skills_seen:
+    skill_events = [e for e in events if e.get("data", {}).get("skill") == skill]
+    steps_completed = sum(1 for e in skill_events if e.get("event") == "step_completed")
+    steps_total = max([e.get("data", {}).get("step_number", 0) for e in skill_events if e.get("event") in ("step_started", "step_completed")] or [0])
+    corrections = [{"step": e["data"].get("context", ""), "feedback": e["data"].get("correction", "")}
+                   for e in skill_events if e.get("event") == "user_correction"]
+    review_verdicts = [e["data"].get("verdict", "") for e in events
+                       if e.get("event") == "review_verdict" and e.get("workflow_id") == wf_id]
+    review_iterations = len(review_verdicts)
+    violations = {}
+    for e in events:
+        if e.get("event") == "hook_violation" and e.get("workflow_id") == wf_id:
+            vtype = e.get("data", {}).get("type", "unknown")
+            violations[vtype] = violations.get(vtype, 0) + 1
+
+    skills_data[skill] = {
+        "steps_completed": steps_completed,
+        "steps_total": steps_total,
+        "corrections": corrections,
+        "review_iterations": review_iterations,
+        "review_verdicts": review_verdicts,
+        "violations": [{"type": k, "count": v} for k, v in violations.items()]
+    }
+
+# Extract tasks
+tasks = [{"id": e["data"].get("task_id", ""), "subject": e["data"].get("task_subject", ""), "status": "completed"}
+         for e in events if e.get("event") == "task_completed"]
+
+# Extract user messages
+user_messages = [{"timestamp": e.get("ts", ""), "context": f"{e['data'].get('active_skill', '')}/{e['data'].get('active_step', '')}",
+                  "preview": e["data"].get("prompt_preview", "")}
+                 for e in events if e.get("event") == "user_message"]
+
+# Extract AI responses
+ai_responses = [{"timestamp": e.get("ts", ""), "context": e["data"].get("active_skill", ""),
+                 "preview": e["data"].get("response_preview", "")}
+                for e in events if e.get("event") == "turn_completed"]
+
+# Extract tool failures
+tool_failures = [{"tool": e["data"].get("tool_name", ""), "error": e["data"].get("error_preview", "")}
+                 for e in events if e.get("event") == "tool_failure"]
+
+# Extract artifacts
+artifacts = []
+for e in events:
+    if e.get("event") in ("spec_created", "plan_created"):
+        p = e.get("data", {}).get("path", "")
+        if p:
+            artifacts.append(p)
+
 package = {
     "package_version": "1.0",
     "workflow_id": wf_id,
-    "events": events
+    "stellar_powers_version": aw.get("sp_version", "unknown"),
+    "context": {
+        "repo": aw.get("repo", "unknown"),
+        "project_type": aw.get("project_type", "unknown"),
+        "task_type": aw.get("task_type", "unknown"),
+        "skills_chain": skills_seen
+    },
+    "timeline": {
+        "started": started,
+        "completed": completed,
+        "duration_minutes": duration,
+        "user_confirmed_complete": True
+    },
+    "skills": skills_data,
+    "tasks": tasks,
+    "user_messages": user_messages,
+    "ai_responses": ai_responses,
+    "tool_failures": tool_failures,
+    "artifacts": artifacts,
+    "completion_feedback": completion_feedback
 }
 
 # Write package
 metrics_dir = os.path.join(cwd, ".stellar-powers", "metrics")
 os.makedirs(metrics_dir, exist_ok=True)
 date_str = datetime.utcnow().strftime("%Y-%m-%d")
-topic = "unknown"
-
-# Extract topic from workflow_started event
+topic = aw.get("topic", "unknown")
 for e in events:
-    if e.get("event") == "workflow_started":
-        topic = e.get("data", {}).get("topic", "unknown")
-        break
-    if e.get("event") == "skill_invocation":
-        topic = e.get("data", {}).get("args", "unknown").split()[0] if e.get("data", {}).get("args") else "unknown"
+    if e.get("event") in ("workflow_started", "skill_invocation"):
+        t = e.get("data", {}).get("topic", "") or e.get("data", {}).get("args", "").split()[0] if e.get("data", {}).get("args") else ""
+        if t:
+            topic = t
+            break
 
 pkg_path = os.path.join(metrics_dir, f"{date_str}-{topic}-{wf_id[:8]}.json")
 with open(pkg_path, "w") as f:
@@ -264,14 +387,18 @@ PYEOF
 
 ## Pruning
 
+Skills pass the workflow_id as `SP_WF_ID` env var, same as packaging.
+
 \`\`\`bash
 # Prune workflow.jsonl — replace detail lines with summary
-python3 << 'PYEOF'
-import json, os, tempfile
+# Usage: SP_WF_ID="$WF_ID" python3 << 'PYEOF'
+import json, os
 
 cwd = os.getcwd()
 wf_file = os.path.join(cwd, ".stellar-powers", "workflow.jsonl")
-wf_id = "WORKFLOW_ID"  # replaced by skill
+wf_id = os.environ.get("SP_WF_ID", "")
+if not wf_id:
+    import sys; print("ERROR: SP_WF_ID not set", file=sys.stderr); sys.exit(1)
 
 kept = []
 pruned_events = []
@@ -290,14 +417,57 @@ with open(wf_file) as f:
         except:
             kept.append(line)
 
-# Build summary from pruned events
-summary = {"event": "workflow_summary", "workflow_id": wf_id, "data": {}}
-# Extract summary fields from events...
+# Build rich summary from pruned events (matches spec Component 2)
+skills_seen = []
 for e in pruned_events:
-    if e.get("event") == "workflow_completed":
-        summary["data"] = e.get("data", {})
-        summary["ts"] = e.get("ts", "")
-        break
+    if e.get("event") == "skill_invocation":
+        s = e.get("data", {}).get("skill", "")
+        if s and s not in skills_seen:
+            skills_seen.append(s)
+
+completed_evt = next((e for e in pruned_events if e.get("event") == "workflow_completed"), {})
+started_evt = next((e for e in pruned_events if e.get("event") in ("skill_invocation", "workflow_started")), {})
+
+corrections = sum(1 for e in pruned_events if e.get("event") == "user_correction")
+review_iters = sum(1 for e in pruned_events if e.get("event") == "review_verdict")
+violations = sum(1 for e in pruned_events if e.get("event") == "hook_violation")
+tasks_done = sum(1 for e in pruned_events if e.get("event") == "task_completed")
+steps_done = sum(1 for e in pruned_events if e.get("event") == "step_completed")
+steps_total = max([e.get("data", {}).get("step_number", 0) for e in pruned_events if e.get("event") == "step_started"] or [steps_done])
+
+artifacts = [e.get("data", {}).get("path", "") for e in pruned_events if e.get("event") in ("spec_created", "plan_created") and e.get("data", {}).get("path")]
+
+# Read .active-workflow for context
+aw = {}
+aw_path = os.path.join(cwd, ".stellar-powers", ".active-workflow")
+if os.path.exists(aw_path):
+    try: aw = json.load(open(aw_path))
+    except: pass
+
+summary = {
+    "ts": completed_evt.get("ts", started_evt.get("ts", "")),
+    "event": "workflow_summary",
+    "workflow_id": wf_id,
+    "session": "",
+    "data": {
+        "skill_chain": skills_seen,
+        "topic": aw.get("topic", "unknown"),
+        "repo": aw.get("repo", "unknown"),
+        "task_type": aw.get("task_type", "unknown"),
+        "sp_version": aw.get("sp_version", "unknown"),
+        "started": started_evt.get("ts", ""),
+        "completed": completed_evt.get("ts", ""),
+        "duration_minutes": completed_evt.get("data", {}).get("duration_minutes", 0),
+        "outcome": completed_evt.get("data", {}).get("outcome", "unknown"),
+        "steps_completed": steps_done,
+        "steps_total": steps_total,
+        "corrections": corrections,
+        "review_iterations": review_iters,
+        "violations": violations,
+        "tasks_completed": tasks_done,
+        "artifacts": artifacts
+    }
+}
 
 kept.append(json.dumps(summary))
 
@@ -308,13 +478,41 @@ with open(tmp_path, "w") as f:
 os.rename(tmp_path, wf_file)
 PYEOF
 \`\`\`
+
+## Hold/Park Workflow
+
+Used when the user chooses to park a workflow at the invocation gate.
+
+\`\`\`bash
+# Park the current workflow — rename .active-workflow to .held
+AW_FILE=".stellar-powers/.active-workflow"
+AW_WF_ID=$(python3 -c "import json; print(json.load(open('$AW_FILE')).get('workflow_id',''))" 2>/dev/null)
+mv "$AW_FILE" ".stellar-powers/.active-workflow.held.${AW_WF_ID}"
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"workflow_on_hold\",\"workflow_id\":\"${AW_WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"held_reason\":\"USER_REASON\"}}" >> .stellar-powers/workflow.jsonl
+
+# Resume a held workflow
+# mv ".stellar-powers/.active-workflow.held.${SELECTED_WF_ID}" ".stellar-powers/.active-workflow"
+\`\`\`
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 2: Create .stellar-powers/.gitignore**
+
+```
+# Metrics contain user message previews — don't commit
+metrics/
+*.json.sent
+
+# Active workflow state is transient
+.active-workflow
+.active-workflow.tmp
+.active-workflow.held.*
+```
+
+- [ ] **Step 3: Commit**
 
 ```bash
-git add skills/_shared/snippets.md
-git commit -m "feat: add shared snippets reference for self-improving capabilities"
+git add skills/_shared/snippets.md .stellar-powers/.gitignore
+git commit -m "feat: add shared snippets and .gitignore for self-improving capabilities"
 ```
 
 ---
@@ -557,7 +755,7 @@ _SP_HOOK_INPUT=$(cat 2>/dev/null) || exit 0
 export _SP_HOOK_INPUT
 
 python3 -c '
-import json, sys, os
+import json, sys, os, re
 
 try:
     data = json.loads(os.environ.get("_SP_HOOK_INPUT", ""))
@@ -585,6 +783,15 @@ try:
 except:
     sys.exit(0)
 
+def redact(text):
+    text = re.sub(r"sk-[a-zA-Z0-9]{20,}", "[REDACTED_KEY]", text)
+    text = re.sub(r"ghp_[a-zA-Z0-9]{36,}", "[REDACTED_TOKEN]", text)
+    text = re.sub(r"Bearer\s+[a-zA-Z0-9._-]{20,}", "Bearer [REDACTED]", text)
+    text = re.sub(r"ctx7sk-[a-zA-Z0-9-]+", "[REDACTED_KEY]", text)
+    text = re.sub(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", "[REDACTED_EMAIL]", text)
+    text = re.sub(r"/Users/[^/\s\"]+", "/Users/[user]", text)
+    return text
+
 from datetime import datetime, timezone
 ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 session_id = data.get("session_id", "")
@@ -596,8 +803,8 @@ event = json.dumps({
     "session": session_id,
     "data": {
         "task_id": str(data.get("task_id", "")),
-        "task_subject": re.sub(r"sk-[a-zA-Z0-9]{20,}", "[REDACTED_KEY]", str(data.get("task_subject", ""))[:200]),
-        "task_description": re.sub(r"sk-[a-zA-Z0-9]{20,}", "[REDACTED_KEY]", str(data.get("task_description", ""))[:300])
+        "task_subject": redact(str(data.get("task_subject", ""))[:200]),
+        "task_description": redact(str(data.get("task_description", ""))[:300])
     }
 })
 
@@ -678,7 +885,7 @@ After the existing `workflow_summary` Python block, add a new block that:
 - Checks if `.stellar-powers/.active-workflow` exists
 - If corrupted JSON → delete and warn
 - If workflow_id already has a completed/abandoned event → delete (orphaned)
-- If started > 30 days ago → flag as stale
+- If started > 30 days ago → inject warning into `additionalContext`: "Stale workflow [topic] started N days ago. Consider completing or abandoning it." (warn only, do not delete)
 - Check for `.active-workflow.held.*` files → count and list topics
 - Inject this info into the `additionalContext` output alongside existing workflow summary
 
@@ -737,13 +944,13 @@ The skill must:
 3. If empty, report "No pending feedback to send."
 4. For each package:
    a. Read and parse the JSON
-   b. Check for existing issue with same workflow_id via `gh search issues`
+   b. Deduplication check: `gh search issues --repo Interstellar-code/stellar-powers --match title "[skill-feedback]" "WORKFLOW_ID_SHORT" --json number --jq length`. If result > 0, skip this package and report "already submitted"
    c. Build issue title: `[skill-feedback] {skills_chain}: {topic} ({repo})`
    d. Build issue body with human-readable summary + raw metrics in `<details>` block
    e. Create issue via `gh issue create --repo Interstellar-code/stellar-powers --label skill-feedback --title "..." --body "..."`
    f. On success: rename to `.json.sent`
-   g. On failure: log error, continue to next
-5. Delete all `.sent` files
+   g. On failure: rename `.json.sent` back to `.json` (restore for retry on next run), log error, continue to next
+5. Delete all `.sent` files. Also clean up orphaned `.sent` files (older than 1 hour) from previous crashed runs
 6. Log `feedback_sent` event to workflow.jsonl
 7. Report summary with issue URLs
 
@@ -751,7 +958,12 @@ Labels should include `skill-feedback` plus one label per skill in the chain.
 
 - [ ] **Step 2: Test with a mock metrics file**
 
-Create a test metrics file in `.stellar-powers/metrics/`, run the skill logic manually to verify issue formatting. Delete the test file after.
+Create a test metrics file in `.stellar-powers/metrics/` with mock data matching the package schema. Verify:
+1. The skill reads the file without errors
+2. The generated issue title contains `[skill-feedback]` and the topic
+3. The generated issue body contains "Key Corrections", "Patterns", and "Raw Metrics" sections
+4. The `<details>` block contains valid JSON matching the original package
+Delete the test file after verification.
 
 - [ ] **Step 3: Commit**
 
@@ -808,7 +1020,11 @@ AWEOF
 mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
 ```
 
-The skill should detect repo name from the git remote and determine task_type from user's initial description (or ask).
+Context field resolution (all skills must use this same logic):
+- `REPO`: `basename $(git remote get-url origin 2>/dev/null | sed 's/.git$//') 2>/dev/null || basename $(pwd)`
+- `TOPIC`: extracted from the user's initial args or the spec filename (e.g., "feature-porting" from the spec path)
+- `TASK_TYPE`: the skill asks the user during the first clarifying question: "What type of task is this? (feature/bugfix/refactoring/porting/other)"
+- `SP_VERSION`: `python3 -c "import json; print(json.load(open('$(find ~/.claude/plugins/cache/stellar-powers -name package.json -maxdepth 4 2>/dev/null | head -1)'))['version'])" 2>/dev/null || echo "unknown"`
 
 - [ ] **Step 3: Add step logging to each checklist item**
 
@@ -819,7 +1035,7 @@ At the start and end of each major step (explore context, clarifying questions, 
 At the spec review gate ("Does this design section look right?") and the user review gate, if the user's response is not a simple approval, log a `user_correction` event:
 
 ```bash
-echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"user_correction\",\"workflow_id\":\"${WF_ID}\",\"session\":\"\",\"data\":{\"skill\":\"brainstorming\",\"context\":\"spec_review\",\"correction\":\"USER_FEEDBACK_PREVIEW\",\"category\":\"correction|partial_approval\"}}" >> .stellar-powers/workflow.jsonl
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"user_correction\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"brainstorming\",\"context\":\"spec_review\",\"correction\":\"USER_FEEDBACK_PREVIEW\",\"category\":\"correction|partial_approval\"}}" >> .stellar-powers/workflow.jsonl
 ```
 
 - [ ] **Step 5: Update .active-workflow on handoff to writing-plans**
@@ -952,6 +1168,9 @@ Tests to include:
 6. **hooks.json is valid JSON** — parse hooks.json
 7. **All hook scripts are executable** — check permissions
 8. **send-feedback SKILL.md exists and has required sections** — verify the skill file has gh auth check, metrics scan, issue creation
+9. **End-to-end lifecycle test** — create `.active-workflow` → pipe mock UserPromptSubmit input → verify `user_message` event in workflow.jsonl → pipe mock TaskCompleted input → verify `task_completed` event → simulate completion (write `workflow_completed` event) → run packager → verify metrics package exists and is valid JSON → run pruner → verify workflow.jsonl has `workflow_summary` and no detail lines for that workflow_id
+10. **Kill switch test** — create config.json with `feedback_enabled: false` → run all hooks → verify zero events written
+11. **Rollback note** — verify `.stellar-powers/config.json` with `{"feedback_enabled": false}` disables all feedback capture. Document in test output: "To disable feedback: set feedback_enabled to false in .stellar-powers/config.json"
 
 - [ ] **Step 2: Run tests**
 
@@ -974,7 +1193,9 @@ git commit -m "test: add validation tests for self-improving capabilities"
 - Modify: `README.md`
 - Modify: `RELEASE-NOTES.md`
 - Modify: `package.json` (version bump)
-- Modify: `skills/skills.json` (if exists, add send-feedback entry)
+- [ ] **Step 0: Pre-check**
+
+Run `ls skills/skills.json 2>/dev/null` and `cat package.json | python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"` to determine current version and whether skills.json exists. If skills.json exists, add send-feedback entry. If not, skip.
 
 - [ ] **Step 1: Update README**
 
@@ -986,7 +1207,7 @@ Add version entry with feature summary.
 
 - [ ] **Step 3: Bump version**
 
-Bump to next minor version (e.g., 1.3.0).
+Read the current version from `package.json`, increment the minor version. Also update version in `manifest.json`, `plugin.json`, and `skills/skills.json` (see reference memory `reference_release_procedure.md` for the 4 manifest files).
 
 - [ ] **Step 4: Commit**
 
