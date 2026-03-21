@@ -1,5 +1,36 @@
 # Stellar Powers Release Notes
 
+## v1.1.0 (2026-03-21)
+
+### Context7 Library Documentation Integration
+
+Automatic, up-to-date library documentation lookups embedded across the entire skill chain — prevents LLMs from using outdated or deprecated APIs.
+
+**Integration points:**
+- **writing-plans** — verifies library APIs before writing task code blocks, adds `## Library References` appendix to every plan
+- **brainstorming** — checks current docs when proposing approaches with specific libraries
+- **subagent-driven-development** — enriches implementer prompts with current library docs via `## Library References` section
+- **code reviewer** — non-optional API currency check on every external library in the diff
+- **feature-porting scanner** — Phase 4.5 checks source patterns against current docs, flags stale APIs
+
+**Key properties:**
+- Uses Context7 REST API via `curl` (no MCP, no npm install)
+- `--max-time 10` on all API calls, `tokens=5000` response cap
+- Selects libraries by highest `trustScore`, not arbitrary first result
+- Version-aware: checks project's pinned version, won't "correct" to a newer major version
+- Graceful degradation: skips silently if `CONTEXT7_API_KEY` not set
+- Skips utility libs (lodash, zod) and private `@org/` packages
+
+**Setup:** Get a free API key at context7.com/dashboard, set `CONTEXT7_API_KEY` env var.
+
+### Additional Improvements
+
+- **Visual companion mandatory for UI work** — brainstorming now MUST offer mockups for UI/frontend topics, with mockup persistence to `.stellar-powers/mockups/`
+- **PostToolUse hook fix** — suppressed false "hook error" messages from async stderr output, added exemptions for stellar-powers agent types
+- **42-check test suite** — static validation tests covering all Context7 integration points, opus prohibition, loop guard, skill catalog, and more
+
+---
+
 ## v1.0.9 (2026-03-21)
 
 ### Audit Remediation
