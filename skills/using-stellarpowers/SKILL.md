@@ -104,6 +104,7 @@ These thoughts mean STOP—you're rationalizing:
 | `test-driven-development` | Implementing any feature or bugfix — write tests first |
 | `systematic-debugging` | Any bug, test failure, or unexpected behavior — before proposing fixes |
 | `requesting-code-review` | Completing tasks, implementing major features, or before merging |
+| `send-feedback` | Filing accumulated skill feedback as GitHub issues on the stellar-powers repo |
 | `receiving-code-review` | Receiving code review feedback — requires technical rigor, not blind implementation |
 | `dispatching-parallel-agents` | 2+ independent tasks that can be worked on without shared state |
 | `using-git-worktrees` | Starting feature work that needs isolation from current workspace |
