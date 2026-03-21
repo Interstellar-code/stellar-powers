@@ -86,6 +86,15 @@ stellar-powers/
 - **Agency-Agents** by [Mike Sitarzewski](https://github.com/msitarzewski/agency-agents) — the expert persona library
 - **Stellar Powers** by [Rohit Sharma](https://github.com/Interstellar-code) at [Interstellar Consulting](https://interstellarconsulting.com)
 
+## Self-Improving Feedback
+
+Stellar Powers captures workflow metrics (step tracking, review outcomes, user corrections) and can send them as GitHub issues for analysis.
+
+- **Automatic capture:** Hooks and skills log events to `.stellar-powers/workflow.jsonl`
+- **Completion checkpoint:** Terminal skills ask "Is the workflow complete?" and package metrics
+- **Send feedback:** Run `/stellar-powers:send-feedback` to file metrics as GitHub issues
+- **Kill switch:** Set `{"feedback_enabled": false}` in `.stellar-powers/config.json` to disable
+
 ## License
 
 MIT License — see LICENSE file for details

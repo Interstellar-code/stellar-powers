@@ -1,5 +1,18 @@
 # Stellar Powers Release Notes
 
+## v1.3.0 — Self-Improving Capabilities
+
+- **New hooks:** UserPromptSubmit, TaskCompleted, SubagentStop, Stop, PostToolUseFailure — automatic event capture for workflow metrics
+- **New skill:** `/stellar-powers:send-feedback` — files accumulated metrics as GitHub issues
+- **Workflow lifecycle:** `.active-workflow` state file tracks current workflow, completion checkpoint in terminal skills
+- **Metrics packaging:** Automatic packaging on workflow completion, pruning of workflow.jsonl
+- **Kill switch:** `feedback_enabled` config flag to disable all feedback capture
+- **Privacy:** Redaction filter strips API keys, tokens, emails, and absolute paths from previews
+- **Step tracking:** All skills log step_started/step_completed events
+- **Correction capture:** Review gates log user corrections for feedback analysis
+
+---
+
 ## v1.2.0 (2026-03-21)
 
 ### SDD Task Batching

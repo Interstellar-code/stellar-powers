@@ -1,6 +1,6 @@
 {
   "name": "stellar-powers",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Enhanced skills library with multi-persona subagent dispatch: TDD, debugging, collaboration patterns, and proven techniques",
   "type": "module",
   "author": {
