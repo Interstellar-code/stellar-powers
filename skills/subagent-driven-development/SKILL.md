@@ -43,6 +43,12 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"review_verdict\",\"
 
 Replace `VERDICT`, `PERSONA` (spec-reviewer/code-quality-reviewer), `N`, and `PATH` with actual values.
 
+**Verbal corrections:** If the user provides corrective feedback outside a formal review gate (e.g., "no that's wrong", "you missed X", "don't do Y"), log a user_correction event:
+```bash
+echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"user_correction\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"subagent-driven-development\",\"context\":\"verbal\",\"correction\":\"FIRST_200_CHARS_OF_FEEDBACK\",\"category\":\"correction\"}}" >> .stellar-powers/workflow.jsonl
+```
+Use your judgment — a simple "yes" or "continue" is not a correction. A redirect, disagreement, or gap identification is.
+
 Check `.stellar-powers/workflow.jsonl` for incomplete workflows. If found, load context. Do not re-prompt.
 
 # Subagent-Driven Development

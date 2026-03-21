@@ -1,0 +1,43 @@
+{
+  "name": "metrics-packaging",
+  "description": "Full packaging flow: setup .active-workflow + workflow events, run packager, assert metrics file exists and is valid",
+  "setup": {
+    "active_workflow": {
+      "workflow_id": "TEST-006",
+      "skill": "brainstorming",
+      "topic": "packaging-test",
+      "step": "workflow_setup",
+      "step_number": 0,
+      "started": "2026-03-21T10:00:00Z",
+      "repo": "test-repo",
+      "task_type": "feature",
+      "sp_version": "1.4.0"
+    },
+    "workflow_events": [
+      {"event": "skill_invocation", "ts": "2026-03-21T10:00:00Z", "data": {"skill": "brainstorming", "args": "packaging-test"}},
+      {"event": "step_started",     "ts": "2026-03-21T10:01:00Z", "data": {"skill": "brainstorming", "step": "explore_context", "step_number": 1}},
+      {"event": "step_completed",   "ts": "2026-03-21T10:05:00Z", "data": {"skill": "brainstorming", "step": "explore_context", "step_number": 1}},
+      {"event": "user_message",     "ts": "2026-03-21T10:10:00Z", "data": {"skill": "brainstorming", "step": "clarifying_questions", "prompt_preview": "yes looks good"}},
+      {"event": "workflow_completed","ts": "2026-03-21T10:30:00Z", "data": {"skill": "brainstorming", "duration_minutes": 30, "steps_completed": 1, "steps_total": 9, "outcome": "success", "completion_feedback": "all done"}}
+    ]
+  },
+  "hooks_to_test": [],
+  "scripts_to_run": [
+    {
+      "env": {
+        "SP_WF_ID": "TEST-006",
+        "SP_REPO": "test-repo",
+        "SP_TASK_TYPE": "feature",
+        "SP_VERSION": "1.4.0",
+        "SP_TOPIC": "packaging-test"
+      },
+      "command": "python3 {TESTS_DIR}/test-packager.py"
+    }
+  ],
+  "expected": {
+    "metrics_package_exists": true,
+    "metrics_package_valid_json": true,
+    "metrics_fields_not_unknown": ["repo", "sp_version", "task_type"],
+    "duration_minutes_gt_zero": true
+  }
+}

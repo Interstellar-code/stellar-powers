@@ -187,7 +187,79 @@ def check_assertions(scenario: dict, cwd: Path) -> tuple[bool, list[str]]:
             if actual_len > max_len:
                 failures.append(f"Event '{event_type}' field '{dot_path}': length {actual_len} exceeds max {max_len}")
 
+    # metrics_package_exists: bool — check that at least one .json file exists in .stellar-powers/metrics/
+    if expected.get("metrics_package_exists"):
+        metrics_dir = cwd / ".stellar-powers" / "metrics"
+        pkg_files = list(metrics_dir.glob("*.json")) if metrics_dir.exists() else []
+        if not pkg_files:
+            failures.append("metrics_package_exists: no .json files found in .stellar-powers/metrics/")
+
+    # metrics_package_valid_json: bool — all .json files in metrics/ parse as valid JSON
+    if expected.get("metrics_package_valid_json"):
+        metrics_dir = cwd / ".stellar-powers" / "metrics"
+        pkg_files = list(metrics_dir.glob("*.json")) if metrics_dir.exists() else []
+        for pf in pkg_files:
+            try:
+                json.loads(pf.read_text())
+            except json.JSONDecodeError as e:
+                failures.append(f"metrics_package_valid_json: {pf.name} is not valid JSON: {e}")
+
+    # metrics_fields_not_unknown: [field_name, ...] — in context object of first metrics package
+    not_unknown_fields = expected.get("metrics_fields_not_unknown", [])
+    if not_unknown_fields:
+        metrics_dir = cwd / ".stellar-powers" / "metrics"
+        pkg_files = list(metrics_dir.glob("*.json")) if metrics_dir.exists() else []
+        if not pkg_files:
+            failures.append("metrics_fields_not_unknown: no metrics package found to check")
+        else:
+            pkg = json.loads(pkg_files[0].read_text())
+            field_map = {
+                "repo": pkg.get("context", {}).get("repo"),
+                "sp_version": pkg.get("stellar_powers_version"),
+                "task_type": pkg.get("context", {}).get("task_type"),
+            }
+            for field in not_unknown_fields:
+                val = field_map.get(field)
+                if val is None or val == "unknown":
+                    failures.append(f"metrics_fields_not_unknown: field '{field}' is '{val}'")
+
+    # duration_minutes_gt_zero: bool — timeline.duration_minutes > 0 in first metrics package
+    if expected.get("duration_minutes_gt_zero"):
+        metrics_dir = cwd / ".stellar-powers" / "metrics"
+        pkg_files = list(metrics_dir.glob("*.json")) if metrics_dir.exists() else []
+        if not pkg_files:
+            failures.append("duration_minutes_gt_zero: no metrics package found to check")
+        else:
+            pkg = json.loads(pkg_files[0].read_text())
+            duration = pkg.get("timeline", {}).get("duration_minutes", 0)
+            if not (isinstance(duration, (int, float)) and duration > 0):
+                failures.append(f"duration_minutes_gt_zero: duration_minutes is {duration!r}")
+
     return len(failures) == 0, failures
+
+
+TESTS_DIR = Path(__file__).parent
+
+
+def run_scripts(scenario: dict, cwd: Path) -> list[str]:
+    """Run scripts_to_run entries. Returns list of error messages."""
+    errors = []
+    for entry in scenario.get("scripts_to_run", []):
+        raw_cmd = entry.get("command", "")
+        # Substitute {TESTS_DIR} placeholder
+        command = raw_cmd.replace("{TESTS_DIR}", str(TESTS_DIR))
+        env = {**os.environ, **entry.get("env", {})}
+        result = subprocess.run(
+            command,
+            shell=True,
+            cwd=str(cwd),
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            errors.append(f"Script '{command}' failed (exit {result.returncode}): {result.stderr.strip()}")
+    return errors
 
 
 def run_scenario(scenario_path: Path) -> bool:
@@ -210,8 +282,16 @@ def run_scenario(scenario_path: Path) -> bool:
             if not success:
                 print(f"  WARN: hook '{hook_name}' returned non-zero (hooks should always exit 0)")
 
+        # Run scripts
+        script_errors = run_scripts(scenario, cwd)
+        for err in script_errors:
+            print(f"  SCRIPT ERROR: {err}")
+
         # Check assertions
         passed, failures = check_assertions(scenario, cwd)
+        if script_errors:
+            passed = False
+            failures = script_errors + failures
         if passed:
             print(f"  PASS")
         else:

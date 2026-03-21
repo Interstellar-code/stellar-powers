@@ -295,6 +295,8 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"user_correction\",\
 ```
 Replace `GATE_NAME` with e.g. `plan_review` or `execution_choice`, and `FIRST_200_CHARS_OF_FEEDBACK` with the first 200 characters of the user's feedback.
 
+**Verbal corrections:** If the user provides corrective feedback outside a formal review gate (e.g., "no that's wrong", "you missed X", "don't do Y"), also log a user_correction event. Use your judgment — a simple "yes" or "continue" is not a correction. A redirect, disagreement, or gap identification is.
+
 ## Execution Handoff
 
 Before offering execution choice, create a partial metrics snapshot:

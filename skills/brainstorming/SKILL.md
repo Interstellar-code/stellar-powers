@@ -291,6 +291,8 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"user_correction\",\
 ```
 Replace `GATE_NAME` with the gate name (e.g., `design_section_approval`, `spec_review`, `user_review`) and `FIRST_200_CHARS_OF_FEEDBACK` with the first 200 characters of the user's feedback.
 
+**Verbal corrections:** If the user provides corrective feedback outside a formal review gate (e.g., "no that's wrong", "you missed X", "don't do Y"), also log a user_correction event. Use your judgment — a simple "yes" or "continue" is not a correction. A redirect, disagreement, or gap identification is.
+
 **Implementation:**
 
 - Before invoking writing-plans, create a partial metrics snapshot:
