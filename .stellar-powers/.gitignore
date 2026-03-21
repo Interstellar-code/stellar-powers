@@ -1,0 +1,8 @@
+# Metrics contain user message previews — don't commit
+metrics/
+*.json.sent
+
+# Active workflow state is transient
+.active-workflow
+.active-workflow.tmp
+.active-workflow.held.*
