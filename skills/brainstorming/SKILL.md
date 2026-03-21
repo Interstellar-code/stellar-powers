@@ -102,6 +102,25 @@ digraph brainstorming {
 - Present options conversationally with your recommendation and reasoning
 - Lead with your recommended option and explain why
 
+**Library verification (Context7):**
+
+- When proposing approaches that recommend specific libraries, fetch current docs via Context7 to verify API assumptions. Set `QUERY` to the specific API topic (e.g., `"app router"` not just `"nextjs"`):
+  ```bash
+  LIB_ID=$(curl -s --max-time 10 "https://context7.com/api/v2/libs/search?libraryName=${LIBRARY}" \
+    -H "Authorization: Bearer $CONTEXT7_API_KEY" \
+    | python3 -c "import sys,json; r=json.load(sys.stdin).get('results',[]); print(max(r, key=lambda x: x.get('trustScore',0))['id'] if r else '')" 2>/dev/null)
+  if [ -n "$LIB_ID" ]; then
+    curl -s --max-time 10 "https://context7.com/api/v2/context?libraryId=${LIB_ID}&query=${QUERY}&tokens=5000&type=txt" \
+      -H "Authorization: Bearer $CONTEXT7_API_KEY" 2>/dev/null
+  fi
+  ```
+- Include version info in the approach (e.g., "Next.js 15 — App Router with Server Components")
+- Check the project's pinned version matches — don't recommend patterns from a newer major version than the project uses
+- If a proposed pattern is deprecated, note it in the trade-offs and use the current pattern
+- If this brainstorming session results in a spec document, include a `## Library References` appendix (max ~200 tokens per library, 3-5 key patterns)
+- Skip utility libs (lodash, zod) and private `@org/` packages
+- If `CONTEXT7_API_KEY` is not set, proceed without verification — note this once
+
 **Presenting the design:**
 
 - Once you believe you understand what you're building, present the design
