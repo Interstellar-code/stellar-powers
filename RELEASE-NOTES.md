@@ -1,5 +1,18 @@
 # Stellar Powers Release Notes
 
+## v1.4.0 — Self-Improving Agent + Bug Fixes
+
+- **New local skill:** `self-improving-agent` — autoresearch-inspired loop that analyzes feedback issues, runs eval scenarios, proposes skill improvements on a dedicated branch, and keeps/discards based on score comparison
+- **New eval system:** Test scenario runner with 3 baseline scenarios for hook validation, context resolution, and kill switch
+- **Fix:** Completion checkpoint now inlines full packager/pruner scripts (was referencing snippets.md which agents skipped)
+- **Fix:** Context fields (repo, task_type, sp_version) resolve correctly via env vars with .active-workflow fallback
+- **Fix:** Duration calculation added to metrics packager
+- **Fix:** Step tracking fires in all skills with .active-workflow step field updates at each phase
+- **Fix:** `.active-workflow` step field updates at each phase transition (was stuck on "workflow_setup")
+- **New:** Incremental metrics packaging — partial snapshots at brainstorming and writing-plans handoffs
+
+---
+
 ## v1.3.0 — Self-Improving Capabilities
 
 - **New hooks:** UserPromptSubmit, TaskCompleted, SubagentStop, Stop, PostToolUseFailure — automatic event capture for workflow metrics
