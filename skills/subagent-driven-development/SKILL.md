@@ -265,6 +265,8 @@ fi
 
 Inject the fetched docs into the `## Library References` section of the implementer prompt. If `CONTEXT7_API_KEY` is not set, skip this step silently.
 
+**Query specificity:** Set QUERY to the specific API the task uses, NOT just the library name. Example: for a task using better-auth hooks, query `"databaseHooks"` not `"better-auth"`. For Stripe webhooks, query `"webhooks endpoint"` not `"stripe"`. Vague queries return generic docs that miss the specific API surface the subagent needs, leading to API mismatches.
+
 ## Example Workflow
 
 ```
