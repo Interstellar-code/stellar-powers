@@ -37,12 +37,20 @@ subagent_type = tool_input.get("subagent_type", "")
 model = tool_input.get("model", "")
 description = tool_input.get("description", "")
 
-# Exempt dispatches: Explore/Plan subagent types
-if subagent_type in ("Explore", "Plan"):
+# Exempt dispatches: platform subagent types (not user-authored)
+if subagent_type in ("Explore", "Plan", "claude-code-guide", "statusline-setup"):
+    sys.exit(0)
+
+# Exempt dispatches: stellar-powers agent types
+if subagent_type and subagent_type.startswith("stellar-powers:"):
     sys.exit(0)
 
 # Exempt dispatches: built-in reviewer templates
 if "spec document reviewer" in prompt or "code quality reviewer" in prompt:
+    sys.exit(0)
+
+# Exempt dispatches: plan document reviewer
+if "plan document reviewer" in prompt:
     sys.exit(0)
 
 # Ensure .stellar-powers directory exists
@@ -106,10 +114,9 @@ if not has_persona:
     except Exception:
         pass
 
-    print(
-        f"WARNING: Stellar Powers - Agent dispatch without persona template detected. Description: {description}",
-        file=sys.stderr,
-    )
+    # Log to workflow file only — stderr output from async hooks surfaces
+    # as "PostToolUse:Agent hook error" in Claude Code, which is confusing.
+    # The violation is already recorded in workflow.jsonl above.
 
 sys.exit(0)
 '
