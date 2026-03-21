@@ -127,6 +127,66 @@ def check_assertions(scenario: dict, cwd: Path) -> tuple[bool, list[str]]:
             if val != expected_val:
                 failures.append(f"Event '{event_type}' field '{dot_path}': expected '{expected_val}', got '{val}'")
 
+    def resolve_dot_path(ev: dict, dot_path: str):
+        parts = dot_path.split(".")
+        val = ev
+        for part in parts:
+            if isinstance(val, dict):
+                val = val.get(part)
+            else:
+                return None
+        return val
+
+    # strings_not_present: {"event_type": {"dot.path": ["forbidden1", "forbidden2"]}}
+    for event_type, field_checks in expected.get("strings_not_present", {}).items():
+        matching = [e for e in events if e.get("event") == event_type]
+        if not matching:
+            failures.append(f"No events of type '{event_type}' to check strings_not_present")
+            continue
+        ev = matching[0]
+        for dot_path, forbidden_list in field_checks.items():
+            val = resolve_dot_path(ev, dot_path)
+            if val is None:
+                failures.append(f"Event '{event_type}' field '{dot_path}' is None, cannot check strings_not_present")
+                continue
+            val_str = str(val)
+            for forbidden in forbidden_list:
+                if forbidden in val_str:
+                    failures.append(f"Event '{event_type}' field '{dot_path}' contains forbidden string: '{forbidden}'")
+
+    # strings_present: {"event_type": {"dot.path": ["required1", "required2"]}}
+    for event_type, field_checks in expected.get("strings_present", {}).items():
+        matching = [e for e in events if e.get("event") == event_type]
+        if not matching:
+            failures.append(f"No events of type '{event_type}' to check strings_present")
+            continue
+        ev = matching[0]
+        for dot_path, required_list in field_checks.items():
+            val = resolve_dot_path(ev, dot_path)
+            if val is None:
+                failures.append(f"Event '{event_type}' field '{dot_path}' is None, cannot check strings_present")
+                continue
+            val_str = str(val)
+            for required in required_list:
+                if required not in val_str:
+                    failures.append(f"Event '{event_type}' field '{dot_path}' missing required string: '{required}'")
+
+    # field_max_length: {"event_type": {"dot.path": max_length}}
+    for event_type, field_checks in expected.get("field_max_length", {}).items():
+        matching = [e for e in events if e.get("event") == event_type]
+        if not matching:
+            failures.append(f"No events of type '{event_type}' to check field_max_length")
+            continue
+        ev = matching[0]
+        for dot_path, max_len in field_checks.items():
+            val = resolve_dot_path(ev, dot_path)
+            if val is None:
+                failures.append(f"Event '{event_type}' field '{dot_path}' is None, cannot check field_max_length")
+                continue
+            actual_len = len(str(val))
+            if actual_len > max_len:
+                failures.append(f"Event '{event_type}' field '{dot_path}': length {actual_len} exceeds max {max_len}")
+
     return len(failures) == 0, failures
 
 

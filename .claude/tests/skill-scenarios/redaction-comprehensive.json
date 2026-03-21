@@ -1,0 +1,52 @@
+{
+  "name": "redaction-comprehensive",
+  "description": "All 6 redaction patterns are stripped from prompt_preview before writing to workflow.jsonl",
+  "setup": {
+    "active_workflow": {
+      "workflow_id": "TEST-004",
+      "skill": "brainstorming",
+      "topic": "security-audit",
+      "step": "explore_context",
+      "step_number": 1,
+      "started": "2026-03-21T10:00:00Z",
+      "repo": "test-repo",
+      "task_type": "feature",
+      "sp_version": "1.4.0"
+    },
+    "workflow_events": []
+  },
+  "hooks_to_test": [
+    {
+      "hook": "user-prompt-submit",
+      "input": {
+        "prompt": "sk-abcdefghijklmnopqrstu ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9 ctx7sk-259cb2d0-857f-4610-ac52-e49e0cc91494 u@example.com /Users/rohits/dev/secret"
+      }
+    }
+  ],
+  "expected": {
+    "event_types_present": ["user_message"],
+    "workflow_id_correct": "TEST-004",
+    "strings_not_present": {
+      "user_message": {
+        "data.prompt_preview": [
+          "sk-abcdefghijklmnopqrstu",
+          "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+          "ctx7sk-259cb2d0-857f-4610-ac52-e49e0cc91494",
+          "u@example.com",
+          "/Users/rohits/dev/secret"
+        ]
+      }
+    },
+    "strings_present": {
+      "user_message": {
+        "data.prompt_preview": [
+          "[REDACTED_KEY]",
+          "[REDACTED_TOKEN]",
+          "[REDACTED_EMAIL]",
+          "/Users/[user]"
+        ]
+      }
+    }
+  }
+}

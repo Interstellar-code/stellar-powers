@@ -1,0 +1,43 @@
+{
+  "name": "subagent-stop-capture",
+  "description": "SubagentStop hook writes subagent_completed event with truncated outcome_preview and correct workflow_id",
+  "setup": {
+    "active_workflow": {
+      "workflow_id": "TEST-005",
+      "skill": "sdd",
+      "topic": "api-refactor",
+      "step": "implement",
+      "step_number": 3,
+      "started": "2026-03-21T10:00:00Z",
+      "repo": "test-repo",
+      "task_type": "feature",
+      "sp_version": "1.4.0"
+    },
+    "workflow_events": []
+  },
+  "hooks_to_test": [
+    {
+      "hook": "subagent-stop",
+      "input": {
+        "agent_id": "agent-abc-123",
+        "agent_type": "code_writer",
+        "last_assistant_message": "I have completed the API refactoring task. The endpoint has been updated to use the new authentication middleware. All existing tests pass and I added 12 new unit tests covering edge cases. The response format is now consistent across all endpoints. I also updated the OpenAPI spec to reflect the new parameter names and added deprecation notices for the old field names. The migration guide has been written in MIGRATION.md. Summary: 5 files changed, 287 insertions, 43 deletions. All CI checks should pass on the next run. Let me know if you need any adjustments to the implementation or additional test coverage for specific scenarios."
+      }
+    }
+  ],
+  "expected": {
+    "event_types_present": ["subagent_completed"],
+    "workflow_id_correct": "TEST-005",
+    "event_field_values": {
+      "subagent_completed": {
+        "data.agent_id": "agent-abc-123",
+        "data.agent_type": "code_writer"
+      }
+    },
+    "field_max_length": {
+      "subagent_completed": {
+        "data.outcome_preview": 300
+      }
+    }
+  }
+}
