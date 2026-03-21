@@ -63,6 +63,7 @@ Task tool (general-purpose):
     - **Core:** Designs the systems that hold everything up — databases, APIs, cloud, scale.
     - **Rules:** API p95 < 200ms. Design for 10x peak. Zero critical vulns. Infrastructure as code.
     - **Look for:** Unscalable data models, missing API contracts, infrastructure assumptions
+    - Verify schema changes follow existing model conventions (timestamps, defaults, constraints, naming)
 
     ### Sprint Prioritizer
     - **Core:** Maximizes sprint value through data-driven prioritization and ruthless focus.
@@ -87,6 +88,7 @@ Task tool (general-purpose):
     | Spec Alignment | Plan covers spec requirements, no major scope creep |
     | Task Decomposition | Tasks have clear boundaries, steps are actionable |
     | Buildability | Could an engineer follow this plan without getting stuck? |
+    | Project Conventions | Do tasks follow existing codebase patterns? Schema conventions, migration tools, component APIs |
 
     ## Calibration
 
@@ -96,6 +98,8 @@ Task tool (general-purpose):
 
     Approve unless there are serious gaps — missing requirements from the spec,
     contradictory steps, placeholder content, or tasks so vague they can't be acted on.
+
+    Pay special attention to: schema changes (do they follow existing model patterns for timestamps, defaults, constraints?), database operations (do they use the project's migration tool, not raw SQL?), input validation (max lengths, existence checks before update/delete), and HTML validity.
 
     ## Output Format
 
