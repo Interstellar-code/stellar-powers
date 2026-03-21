@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Stop hook — captures AI response previews for feedback metrics
+# Receives JSON on stdin. MUST exit 0 in all cases.
+
+trap 'exit 0' ERR
+
+_SP_HOOK_INPUT=$(cat 2>/dev/null) || exit 0
+export _SP_HOOK_INPUT
+
+python3 -c '
+import json, sys, os, re
+
+try:
+    data = json.loads(os.environ.get("_SP_HOOK_INPUT", ""))
+except Exception:
+    sys.exit(0)
+
+cwd = data.get("cwd", "")
+if not cwd:
+    sys.exit(0)
+
+# Check feedback enabled
+config_path = os.path.join(cwd, ".stellar-powers", "config.json")
+if os.path.exists(config_path):
+    try:
+        if not json.load(open(config_path)).get("feedback_enabled", True):
+            sys.exit(0)
+    except:
+        pass
+
+# Check active workflow
+aw_path = os.path.join(cwd, ".stellar-powers", ".active-workflow")
+if not os.path.exists(aw_path):
+    sys.exit(0)
+
+try:
+    aw = json.load(open(aw_path))
+except:
+    sys.exit(0)
+
+workflow_id = aw.get("workflow_id", "")
+active_skill = aw.get("skill", "")
+
+response_preview = data.get("last_assistant_message", "")[:300]
+response_preview = re.sub(r"sk-[a-zA-Z0-9]{20,}", "[REDACTED_KEY]", response_preview)
+response_preview = re.sub(r"ghp_[a-zA-Z0-9]{36,}", "[REDACTED_TOKEN]", response_preview)
+response_preview = re.sub(r"Bearer\s+[a-zA-Z0-9._-]{20,}", "Bearer [REDACTED]", response_preview)
+response_preview = re.sub(r"ctx7sk-[a-zA-Z0-9-]+", "[REDACTED_KEY]", response_preview)
+response_preview = re.sub(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", "[REDACTED_EMAIL]", response_preview)
+response_preview = re.sub(r"/Users/[^/\s\"]+", "/Users/[user]", response_preview)
+
+from datetime import datetime, timezone
+ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+session_id = data.get("session_id", "")
+
+wf_file = os.path.join(cwd, ".stellar-powers", "workflow.jsonl")
+os.makedirs(os.path.dirname(wf_file), exist_ok=True)
+
+event = json.dumps({
+    "ts": ts,
+    "event": "turn_completed",
+    "workflow_id": workflow_id,
+    "session": session_id,
+    "data": {
+        "response_preview": response_preview,
+        "active_skill": active_skill
+    }
+})
+
+with open(wf_file, "a") as f:
+    f.write(event + "\n")
+' 2>/dev/null
+
+exit 0
