@@ -1,5 +1,22 @@
 # Stellar Powers Release Notes
 
+## v1.2.0 (2026-03-21)
+
+### SDD Task Batching
+
+Subagent-driven-development now batches small mechanical tasks to reduce dispatch overhead.
+
+- **`[batch]` / `[solo]` annotations** — writing-plans emits complexity annotations on every task heading. Users can override during plan review.
+- **Automatic grouping** — SDD groups 2-4 consecutive `[batch]` tasks into one sub-agent dispatch with per-task commits
+- **Fallback heuristic** — unannotated plans (old or external) are classified per-task using the same complexity signals
+- **Dependency detection** — tasks referencing other tasks by number, shared files, or prior output are auto-promoted to `[solo]`
+- **Token budget guard** — batches capped at 60k tokens, max 4 tasks
+- **Per-task review** — one reviewer per stage delivers per-task verdicts; failed tasks get targeted re-review without re-reviewing passing tasks
+- **SHA parsing with fallback** — controller extracts commit SHAs from implementer report; falls back to `git log` if format drifts
+- **Multi-task implementer prompt** — new variant with inline self-review checklist, no "Before You Begin" block (automated dispatch has no question channel)
+
+---
+
 ## v1.1.0 (2026-03-21)
 
 ### Context7 Library Documentation Integration
