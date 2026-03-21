@@ -49,3 +49,5 @@
 {"ts":"2026-03-21T14:34:01Z","event":"spec_created","workflow_id":"1D06F239-1DCE-47EA-95F3-0E1BE86FB99D","session":"","data":{"path":".stellar-powers/specs/2026-03-21-sdd-task-batching-design.md","skill":"brainstorming","topic":"sdd-task-batching"}}
 {"ts":"2026-03-21T14:38:46Z","event":"skill_invocation","workflow_id":"6C15544F-550F-4A8A-84FE-51AD0C6B6746","session":"","data":{"skill":"writing-plans","args":"sdd-task-batching plan"}}
 {"ts":"2026-03-21T14:40:34Z","event":"plan_created","workflow_id":"6C15544F-550F-4A8A-84FE-51AD0C6B6746","session":"","data":{"path":".stellar-powers/plans/2026-03-21-sdd-task-batching.md","skill":"writing-plans","topic":"sdd-task-batching"}}
+{"ts":"2026-03-21T17:50:33Z","event":"skill_invocation","workflow_id":"8354597C-3008-4FFC-BFC3-8A22C1BCD800","session":"","data":{"skill":"brainstorming","args":"self-improving capabilities design"}}
+{"ts":"2026-03-21T18:44:39Z","event":"spec_created","workflow_id":"8354597C-3008-4FFC-BFC3-8A22C1BCD800","session":"","data":{"path":".stellar-powers/specs/2026-03-21-self-improving-capabilities-design.md","skill":"brainstorming","topic":"self-improving-capabilities"}}

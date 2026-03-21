@@ -188,7 +188,7 @@ Skills create and update this file. Hooks read it. This is the bridge between au
 | `workflow_started` | Skill entry | skill, topic, repo, task_type, sp_version |
 | `step_started` | Skill checklist | skill, step, step_number |
 | `step_completed` | Skill checklist | skill, step, step_number |
-| `user_correction` | Skill (on user feedback) | skill, context, correction, history_ref |
+| `user_correction` | Skill (at review gates) | skill, context, correction, history_ref |
 | `workflow_completed` | Terminal skill | skill, duration_minutes, steps_completed, steps_total, outcome, completion_feedback |
 | `workflow_abandoned` | User command | abandoned_at_step, reason |
 | `workflow_on_hold` | User choice | held_reason |
@@ -198,6 +198,12 @@ Skills create and update this file. Hooks read it. This is the bridge between au
 ### Pruning Strategy
 
 **During execution:** Full detail logging — every step, message, task, subagent event.
+
+**Pruning order (atomic):** Package first, prune second. The metrics package file must be written and verified (file exists, valid JSON) before any pruning occurs. If packaging fails, detail lines are preserved in workflow.jsonl — no data loss. The sequence is:
+1. Write metrics package to `.stellar-powers/metrics/`
+2. Verify package file exists and is valid JSON
+3. Only then prune workflow.jsonl (replace detail lines with summary)
+4. If step 1 or 2 fails, abort pruning and log a warning — data stays in workflow.jsonl
 
 **After workflow completion:** All detail lines for that workflow_id are replaced with a single `workflow_summary` line:
 
@@ -435,6 +441,17 @@ skills/
 1. **On entry:** Read/create `.active-workflow`, handle invocation gate
 2. **At each checklist step:** Log `step_started` and `step_completed` events
 3. **On user corrections:** Log `user_correction` event with preview and timestamp
+
+### User Correction Detection
+
+Skills don't need to classify arbitrary user messages. Corrections are captured at **review gates** — the structured moments where skills explicitly ask for feedback:
+
+- Brainstorming: "Does this design section look right?" → user says "no, you missed X"
+- Writing-plans: "Does this plan look correct?" → user requests changes
+- Spec review: user provides feedback on the written spec
+- Completion checkpoint: "Is the workflow complete?" → user says "complete, but X was too verbose"
+
+At these gates, the skill has already asked a yes/no/feedback question. If the user's response is not a simple approval (yes/looks good/proceed), the skill logs it as a `user_correction`. This is deterministic — no AI classification needed. The gate structure makes it unambiguous: the skill asked, the user responded with something other than approval, therefore it's a correction.
 
 ### Terminal Skills (completion checkpoint)
 
