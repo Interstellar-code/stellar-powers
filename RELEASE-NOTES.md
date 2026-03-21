@@ -1,5 +1,41 @@
 # Stellar Powers Release Notes
 
+## v1.0.9 (2026-03-21)
+
+### Audit Remediation
+
+Comprehensive audit of all 15 skills, hooks, manifests, and integration points — 24 issues fixed.
+
+**Critical fixes:**
+- **Loop guard** — brainstorming now skips cross-project intent detection when invoked from feature-porting (prevents infinite dispatch loop)
+- **Opus prohibition** — explicit `model=sonnet` and "never use opus for subagents" added to brainstorming, writing-plans, and subagent-driven-development
+- **Skill catalog** — using-stellarpowers now lists all 15 available skills with descriptions
+
+**Skill chain fixes:**
+- Brainstorming step 9 now invokes `using-git-worktrees` before writing-plans (was documented as required but never called)
+- Brainstorming passes parsed source path + feature name when invoking feature-porting
+- Fixed broken `stellar-powers:code-reviewer` references in requesting-code-review (was referencing a non-existent skill instead of prompt template)
+- Added session resumption to requesting-code-review
+- Added `task_completed` and `plan_executed` logging events to executing-plans
+- Added `receiving-code-review` cross-reference from requesting-code-review
+- Fixed subagent-driven-development flowchart label
+
+**Consistency fixes:**
+- Replaced `@` force-load anti-pattern with `./` in writing-skills and test-driven-development
+- Unified code-reviewer severity labels (emoji → word system)
+- Fixed visual-companion.md path reference in brainstorming
+- Fixed brainstorming description to start with "Use when"
+
+**Infrastructure:**
+- Added PostToolUse hook to hooks-cursor.json (Cursor parity)
+- Added missing keywords to .cursor-plugin/plugin.json
+- Fixed gemini-extension.json (name, version, description were stale superpowers artifacts)
+- Fixed package.json (removed superpowers.js main field, added missing metadata)
+- Updated README with feature-porting, workflow tracking, and PostToolUse hook docs
+- Added feature-porting test prompts for skill-triggering and explicit-skill-requests
+
+---
+
 ## v1.0.8 (2026-03-21)
 
 ### New Skill: Feature Porting
