@@ -10,11 +10,20 @@ Task tool (general-purpose):
 
     ## Task Description
 
-    [FULL TEXT of task from plan - paste it here, don't make subagent read file]
+    [FULL TEXT of task from plan - paste COMPLETE text verbatim including ALL code
+    blocks, exact commands, library version notes, and edge case warnings.
+    Do NOT condense, summarize, or omit details. If the task is 200 lines, paste 200 lines.]
 
     ## Context
 
     [Scene-setting: where this fits, dependencies, architectural context]
+
+    ## Project Gotchas
+
+    [Known issues from CLAUDE.md, memory files, and past corrections.
+    Examples: "Use db:migrate not raw psql", "Select onValueChange can be null",
+    "Import ordering: external → internal → relative".
+    If none known, omit this section.]
 
     ## Library References (if provided by controller via Context7)
 

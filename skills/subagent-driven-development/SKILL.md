@@ -63,11 +63,14 @@ Execute plan by dispatching fresh subagent per task, with two-stage review after
 **Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
 
 **Project context injection:** Before dispatching the first implementer, read the project's configuration files to build a context block that EVERY subagent receives:
-1. Read `CLAUDE.md` or `AGENTS.md` if they exist — extract database setup, framework versions, conventions, constraints
+1. Read `CLAUDE.md` or `AGENTS.md` if they exist — extract database setup, framework versions, conventions, constraints, **and any known gotchas or past issues** (e.g., "always use db:migrate not raw psql", "Select onValueChange can be null")
 2. Read `.env` or `.env.example` — identify database type (PostgreSQL, PGlite, SQLite, etc.), key service URLs
 3. Read `package.json` — identify framework, key dependencies and their versions
 4. Read 1-2 existing schema/model files — identify conventions for timestamps (`mode: 'date'`, `defaultNow()`, `$onUpdate()`), naming patterns, validation patterns, and default values
-5. Compile a "Project Context" block (max ~200 words) with the critical facts including schema conventions. Include this in EVERY implementer dispatch's `## Context` section.
+5. Read `.claude/` memory files if they exist — extract known issues, past corrections, project-specific warnings
+6. Compile a "Project Context" block (max ~300 words) with the critical facts including schema conventions **and known gotchas**. Include this in EVERY implementer dispatch's `## Context` section.
+
+**Known gotchas are critical.** If the same issue has been corrected before (PGlite assumption, Select null types, import ordering), it MUST be in the project context. Subagents repeat mistakes that aren't explicitly warned against.
 
 This prevents subagents from making wrong assumptions (e.g., assuming PGlite when the project uses PostgreSQL, or not following timestamp conventions).
 
@@ -139,7 +142,9 @@ digraph process {
     "Code quality reviewer subagent approves?" -> "Mark task complete in TodoWrite" [label="yes"];
     "Mark task complete in TodoWrite" -> "More tasks remain?";
     "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
-    "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
+    "More tasks remain?" -> "Run runtime verification" [label="no"];
+    "Run runtime verification" [shape=box];
+    "Run runtime verification" -> "Dispatch final code reviewer subagent for entire implementation";
     "Dispatch final code reviewer subagent for entire implementation" -> "Use stellar-powers:finishing-a-development-branch";
 }
 ```
@@ -157,6 +162,22 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"review_verdict\",\"
 ```
 
 Replace `approved|issues_found` with the actual verdict, and increment `iteration` on each re-review loop.
+
+## Runtime Verification
+
+**MANDATORY: After all tasks pass review and before the completion checkpoint, run runtime verification.**
+
+Subagents report "DONE" based on code compilation and tests, NOT actual runtime behavior. You MUST verify the implementation works end-to-end:
+
+1. **Run the project's test suite** if it exists (`npm test`, `pnpm test`, `pytest`, etc.)
+2. **Run type checking** if applicable (`tsc --noEmit`, `pnpm check:types`)
+3. **Run linting** if applicable (`pnpm lint`, `pnpm check`)
+4. **If it's a web app, check that it builds** (`pnpm build` or equivalent)
+5. **Report any failures to the user** before claiming completion
+
+If any verification fails, fix the issues before proceeding to the completion checkpoint. Do NOT skip verification because "the subagent said it works."
+
+**REQUIRED SUB-SKILL:** Use `stellar-powers:verification-before-completion` for the verification checklist.
 
 ## Model Selection
 
@@ -425,6 +446,7 @@ Done!
 - Proceed with unfixed issues
 - Dispatch multiple implementation subagents in parallel (conflicts)
 - Make subagent read plan file (provide full text instead)
+- **Condense or summarize plan task text** — paste the COMPLETE task verbatim including all code blocks, exact commands, library notes, and edge case warnings. A 300-line plan condensed to 100 lines loses the API details and gotchas that prevent bugs. If the task text is long, that's fine — include ALL of it.
 - Skip scene-setting context (subagent needs to understand where task fits)
 - Ignore subagent questions (answer before letting them proceed)
 - Accept "close enough" on spec compliance (spec reviewer found issues = not done)
