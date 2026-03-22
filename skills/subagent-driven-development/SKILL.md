@@ -33,6 +33,9 @@ aw['skill'] = 'subagent-driven-development'
 aw['workflow_id'] = '${WF_ID}'
 json.dump(aw, open(aw_path, 'w'))
 " 2>/dev/null
+
+# MANDATORY: Create partial metrics snapshot at execution start
+SP_WF_ID="${WF_ID}" python3 "${CLAUDE_PLUGIN_ROOT}/scripts/metrics-packager.py" --partial --stage execution
 ```
 
 After each review verdict (spec compliance or code quality), log:
