@@ -147,7 +147,26 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"workflow_completed\
 
 ## Metrics Packaging
 
-Skills pass the workflow_id as an environment variable `SP_WF_ID` before calling this script.
+**Use the standalone script** — do NOT use inline Python heredocs (agents skip them).
+
+```bash
+# Partial snapshot (at handoff points):
+SP_WF_ID="${WF_ID}" python3 "${CLAUDE_PLUGIN_ROOT}/scripts/metrics-packager.py" --partial --stage brainstorming
+
+# Full package + prune (at completion checkpoint):
+export SP_WF_ID="${WF_ID}"
+export SP_REPO=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('repo') or 'unknown')" 2>/dev/null || echo "unknown")
+export SP_TASK_TYPE=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('task_type') or 'unknown')" 2>/dev/null || echo "unknown")
+export SP_VERSION=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('sp_version') or 'unknown')" 2>/dev/null || echo "unknown")
+export SP_TOPIC=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('topic') or 'unknown')" 2>/dev/null || echo "unknown")
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/metrics-packager.py" --prune
+```
+
+The script at `scripts/metrics-packager.py` handles everything: event extraction, rich package structure, null-field fallback, partial cleanup, and pruning.
+
+<details><summary>Legacy inline packager (deprecated — do not use)</summary>
+
+Skills previously used inline Python heredocs. These were skipped by agents in practice.
 
 ```bash
 # Package workflow metrics into a structured JSON file
@@ -408,6 +427,8 @@ with open(tmp_path, "w") as f:
 os.rename(tmp_path, wf_file)
 PYEOF
 ```
+
+</details>
 
 ## Hold/Park Workflow
 

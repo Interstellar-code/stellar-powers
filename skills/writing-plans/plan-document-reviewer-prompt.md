@@ -89,6 +89,7 @@ Task tool (general-purpose):
     | Task Decomposition | Tasks have clear boundaries, steps are actionable |
     | Buildability | Could an engineer follow this plan without getting stuck? |
     | Project Conventions | Do tasks follow existing codebase patterns? Schema conventions, migration tools, component APIs |
+    | Framework Correctness | Server/client component boundaries (no passing functions from server to client components), routing patterns (router.refresh vs router.push vs revalidation), i18n completeness (all supported locales covered) |
 
     ## Calibration
 
@@ -99,7 +100,14 @@ Task tool (general-purpose):
     Approve unless there are serious gaps — missing requirements from the spec,
     contradictory steps, placeholder content, or tasks so vague they can't be acted on.
 
-    Pay special attention to: schema changes (do they follow existing model patterns for timestamps, defaults, constraints?), database operations (do they use the project's migration tool, not raw SQL?), input validation (max lengths, existence checks before update/delete), and HTML validity.
+    Pay special attention to:
+    - Schema changes: do they follow existing model patterns for timestamps, defaults, constraints?
+    - Database operations: do they use the project's migration tool, not raw SQL?
+    - Input validation: max lengths, existence checks before update/delete
+    - HTML validity
+    - Server/client component boundaries: can event handlers and callbacks cross the boundary? Are "use client" directives placed correctly?
+    - i18n: are translations provided for ALL supported locales, not just the primary language?
+    - State invalidation: after mutations, does the plan specify how to refresh cached data (router.refresh, revalidation, cache tags)?
 
     ## Output Format
 
