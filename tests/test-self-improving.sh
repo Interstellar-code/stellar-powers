@@ -608,6 +608,50 @@ echo "Test 20: Standalone packager has model and session_stats"
     FAIL=$((FAIL + 1))
   fi
 
+echo ""
+echo "Test 21: Persona marker detection covers SDD prompt format"
+  MARKERS=$(grep -A10 "markers = \[" hooks/post-tool-use | head -10)
+  if echo "$MARKERS" | grep -q "agent persona:"; then
+    echo "  PASS: 'agent persona:' marker present"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: 'agent persona:' marker missing — SDD implementer prompts will trigger false violations"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 22: Plan reviewer has safety & completeness checklist"
+  if grep -q "Safety & Completeness Checklist" skills/writing-plans/plan-document-reviewer-prompt.md; then
+    echo "  PASS: safety checklist present in plan reviewer"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: safety checklist missing from plan reviewer"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 23: Implementer prompt requires pre-commit type check"
+  if grep -q "check:types\|tsc --noEmit" skills/subagent-driven-development/implementer-prompt.md; then
+    echo "  PASS: type check required before commit"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: no type check requirement in implementer prompt"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 24: md-extract-section.py exists and has read+write modes"
+  if [ -f scripts/md-extract-section.py ] && \
+     grep -q "\-\-write" scripts/md-extract-section.py && \
+     grep -q "\-\-pattern" scripts/md-extract-section.py && \
+     grep -q "\-\-overview" scripts/md-extract-section.py; then
+    echo "  PASS: md-extract-section.py has read, write, pattern, and overview modes"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: md-extract-section.py missing or incomplete"
+    FAIL=$((FAIL + 1))
+  fi
+
 # ─── Summary ─────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
