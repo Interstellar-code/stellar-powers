@@ -379,7 +379,7 @@ Do NOT offer execution options or invoke any implementation skill until the Plan
 Before offering execution choice, create a partial metrics snapshot:
 ```bash
 # MANDATORY: Create partial metrics snapshot before handoff
-SP_WF_ID="${WF_ID}" SP_PACKAGER=$(find ~/.claude/plugins/cache/stellar-powers -name "metrics-packager.py" -maxdepth 5 2>/dev/null | head -1) && python3 "$SP_PACKAGER" --partial --stage writing-plans
+SP_WF_ID="${WF_ID}" python3 "$(find ~/.claude/plugins/cache/stellar-powers -name metrics-packager.py -maxdepth 5 2>/dev/null | head -1)" --partial --stage writing-plans
 ```
 
 After saving the plan, offer execution choice:

@@ -35,7 +35,7 @@ json.dump(aw, open(aw_path, 'w'))
 " 2>/dev/null
 
 # MANDATORY: Create partial metrics snapshot at execution start
-SP_WF_ID="${WF_ID}" SP_PACKAGER=$(find ~/.claude/plugins/cache/stellar-powers -name "metrics-packager.py" -maxdepth 5 2>/dev/null | head -1) && python3 "$SP_PACKAGER" --partial --stage execution
+SP_WF_ID="${WF_ID}" python3 "$(find ~/.claude/plugins/cache/stellar-powers -name metrics-packager.py -maxdepth 5 2>/dev/null | head -1)" --partial --stage execution
 ```
 
 After each task completion, log:
@@ -136,7 +136,7 @@ export SP_REPO=$(python3 -c "import json; print(json.load(open('.stellar-powers/
 export SP_TASK_TYPE=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('task_type') or 'unknown')" 2>/dev/null || echo "unknown")
 export SP_VERSION=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('sp_version') or 'unknown')" 2>/dev/null || echo "unknown")
 export SP_TOPIC=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('topic') or 'unknown')" 2>/dev/null || echo "unknown")
-SP_PACKAGER=$(find ~/.claude/plugins/cache/stellar-powers -name "metrics-packager.py" -maxdepth 5 2>/dev/null | head -1) && python3 "$SP_PACKAGER" --prune
+python3 "$(find ~/.claude/plugins/cache/stellar-powers -name metrics-packager.py -maxdepth 5 2>/dev/null | head -1)" --prune
 ```
 
 3. Cleanup:
