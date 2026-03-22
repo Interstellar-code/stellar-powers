@@ -209,7 +209,7 @@ Max ~200 tokens per library entry. Summarize 3-5 key API patterns relevant to th
 ## Task Structure
 
 ````markdown
-### Task N: [Component Name] [batch|solo]
+### Task N: [Component Name] [batch|solo] [persona-tag]
 
 **Files:**
 - Create: `exact/path/to/file.py`
@@ -268,6 +268,36 @@ Every task heading MUST include a `[batch]` or `[solo]` annotation. Assess each 
 - Modifies shared interfaces or schemas
 
 These annotations tell `subagent-driven-development` whether to batch consecutive `[batch]` tasks into a single sub-agent dispatch (2-4 per agent) or dispatch each `[solo]` task individually. The user can change annotations during plan review.
+
+## Persona Assignment
+
+Every task heading MUST include a persona tag. The tag determines which expert persona the implementer subagent receives during execution.
+
+**Before assigning personas:** Browse `personas/curated/` to see all available personas. Each file contains a rich persona definition with specific rules, mission, and expertise that gets injected into the implementer subagent during execution.
+
+**Tag selection — match the task's primary concern:**
+
+| Tag | Curated Persona | Use When Task Involves |
+|---|---|---|
+| `backend-architect` | `personas/curated/backend-architect.md` | Schema, migration, database, API, procedures, middleware |
+| `frontend-engineer` | `personas/source/engineering/engineering-frontend-developer.md` | Components, pages, UI, styling, i18n, client-side state |
+| `security-engineer` | `personas/curated/security-engineer.md` | Auth, permissions, validation, input sanitization |
+| `software-architect` | `personas/curated/software-architect.md` | Architecture decisions, system design, boundaries |
+| `devops` | `personas/curated/devops-automator.md` | Dependencies, config, CI/CD, environment setup |
+| `code-reviewer` | `personas/curated/code-reviewer.md` | Tests, verification, quality checks |
+
+**Example:**
+```
+### Task 1: Create database schema [solo] [backend-architect]
+### Task 2: Add auth middleware [solo] [security-engineer]
+### Task 3: Install shadcn components [batch] [devops]
+### Task 4: Build API endpoints [solo] [backend-architect]
+### Task 5: Create React components [solo] [frontend-engineer]
+### Task 6: Add i18n translations [batch] [frontend-engineer]
+### Task 7: Final verification [batch] [code-reviewer]
+```
+
+**If a task spans multiple domains** (e.g., API + frontend wiring), use the persona for the primary/harder concern.
 
 ## Remember
 - Exact file paths always

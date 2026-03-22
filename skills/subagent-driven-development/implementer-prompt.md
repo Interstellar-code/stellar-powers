@@ -8,6 +8,12 @@ Task tool (general-purpose):
   prompt: |
     You are implementing Task N: [task name]
 
+    ## Agent Persona
+
+    [Inject the matching persona definition from skills/_shared/persona-catalog.md.
+    Read the persona tag from the task heading (e.g., [backend-architect]) and paste
+    the full persona block here. If no tag, infer from the task's file types.]
+
     ## Task Description
 
     [FULL TEXT of task from plan - paste COMPLETE text verbatim including ALL code
@@ -139,6 +145,13 @@ Use this template when dispatching a batch of 2-4 tasks to a single implementer.
       description: "Implement Tasks N-M: [batch summary]"
       prompt: |
         You are implementing {N} tasks sequentially. Complete each in order, commit after each.
+
+        ## Agent Persona
+
+        [Inject the persona of the primary task, or the most common persona if tasks span
+        multiple roles. Read the persona tag from the task headings and paste the full
+        persona block from skills/_shared/persona-catalog.md here. If no tag, infer from
+        the task's file types.]
 
         ## Task 1: {title}
         {FULL TEXT from plan}

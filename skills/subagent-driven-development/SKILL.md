@@ -298,6 +298,30 @@ Verdict format:
 - Task 2 handled via BLOCKED path
 - If Task 2 is later re-dispatched and completed, it gets its own solo review pass
 
+## Persona Injection
+
+Plans annotated by `writing-plans` include persona tags in each task heading:
+
+    ### Task 1: Create database schema [solo] [backend-architect]
+    ### Task 5: Build React components [solo] [frontend-engineer]
+
+**Before dispatching each implementer:**
+
+1. Read the persona tag from the task heading (e.g., `backend-architect`)
+2. Read the matching curated persona file: `personas/curated/{tag}.md` (e.g., `personas/curated/backend-architect.md`). For `frontend-engineer`, use `personas/source/engineering/engineering-frontend-developer.md`
+3. Paste the full persona content into the implementer prompt's `## Agent Persona` section
+
+**If no persona tag exists** (unannotated plans or legacy tasks), infer from the task's files:
+- `.ts` files in `src/server/`, `src/models/`, `src/libs/` → `backend-architect`
+- `.tsx` files in `src/components/`, `src/app/` → `frontend-engineer`
+- Schema/migration files → `backend-architect`
+- Auth/middleware files → `security-engineer`
+- Test files → `code-reviewer`
+- Config/package files → `devops`
+- Default if unclear → `software-architect`
+
+**The SDD controller itself operates as `project-manager`** — coordinating tasks, tracking progress, verifying outputs. You don't dispatch yourself as a subagent; you ARE the project manager.
+
 ## Prompt Templates
 
 **MANDATORY:** Before dispatching any subagent, Read the corresponding prompt template file using the Read tool. Use the template's contents as the subagent prompt. Do NOT construct your own ad-hoc prompts — the templates contain persona injections (Software Architect, Code Reviewer) that ensure expert-level review quality.
@@ -444,6 +468,7 @@ Done!
 - Start implementation on main/master branch without explicit user consent
 - Skip reviews (spec compliance OR code quality)
 - Proceed with unfixed issues
+- Dispatch an implementer without a persona — every subagent must have a role
 - Dispatch multiple implementation subagents in parallel (conflicts)
 - Make subagent read plan file (provide full text instead)
 - **Condense or summarize plan task text** — paste the COMPLETE task verbatim including all code blocks, exact commands, library notes, and edge case warnings. A 300-line plan condensed to 100 lines loses the API details and gotchas that prevent bugs. If the task text is long, that's fine — include ALL of it.
