@@ -248,6 +248,8 @@ Max ~200 tokens per library entry. Summarize 3-5 key API patterns relevant to th
 
 ## Task Structure
 
+**MANDATORY: Every task heading MUST have all three annotations: [batch|solo] [persona-tag].** A task without a persona tag is incomplete. The persona tag determines which expert (backend-architect, frontend-engineer, security-engineer, etc.) the implementer subagent receives. See the Persona Assignment section below for the tag list.
+
 ````markdown
 ### Task N: [Component Name] [batch|solo] [persona-tag]
 
@@ -345,6 +347,7 @@ Every task heading MUST include a persona tag. The tag determines which expert p
 - Exact commands with expected output
 - Reference relevant skills with @ syntax
 - DRY, YAGNI, TDD, frequent commits
+- **Every task heading needs [batch|solo] AND [persona-tag]** — no exceptions
 
 ## Plan Review Loop
 
