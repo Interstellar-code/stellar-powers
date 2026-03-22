@@ -85,6 +85,7 @@ Task tool (general-purpose):
     | Completeness | TODOs, placeholders, "TBD", incomplete sections |
     | Consistency | Internal contradictions, conflicting requirements |
     | Clarity | Requirements ambiguous enough to cause someone to build the wrong thing |
+    | Implementation Detail | Are API patterns, library versions, edge cases, and error handling specified clearly enough that a subagent won't have to guess? Vague specs produce vague implementations |
     | Scope | Focused enough for a single plan — not covering multiple independent subsystems |
     | YAGNI | Unrequested features, over-engineering |
 

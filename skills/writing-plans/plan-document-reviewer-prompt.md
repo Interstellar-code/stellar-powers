@@ -88,6 +88,8 @@ Task tool (general-purpose):
     | Spec Alignment | Plan covers spec requirements, no major scope creep |
     | Task Decomposition | Tasks have clear boundaries, steps are actionable |
     | Buildability | Could an engineer follow this plan without getting stuck? |
+    | Task Annotations | Every task heading MUST have `[batch\|solo]` AND `[persona-tag]`. Missing persona tag = issue. Valid tags: backend-architect, frontend-engineer, security-engineer, software-architect, devops, code-reviewer |
+    | Context Completeness | Does each task include FULL code blocks, exact commands, library notes? Condensed/summarized tasks that omit API details or edge cases = issue |
     | Project Conventions | Do tasks follow existing codebase patterns? Schema conventions, migration tools, component APIs |
     | Framework Correctness | Server/client component boundaries (no passing functions from server to client components), routing patterns (router.refresh vs router.push vs revalidation), i18n completeness (all supported locales covered) |
 
