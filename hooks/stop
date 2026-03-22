@@ -41,6 +41,22 @@ except:
 workflow_id = aw.get("workflow_id", "")
 active_skill = aw.get("skill", "")
 
+# Capture model and permission_mode into .active-workflow if not already set
+model = data.get("model", "") or data.get("metadata", {}).get("model", "")
+permission_mode = data.get("permission_mode", "")
+if model and not aw.get("model"):
+    aw["model"] = model
+    if permission_mode:
+        aw["permission_mode"] = permission_mode
+    try:
+        import tempfile
+        tmp = tempfile.NamedTemporaryFile(mode="w", dir=os.path.dirname(aw_path), delete=False, suffix=".tmp")
+        json.dump(aw, tmp)
+        tmp.close()
+        os.rename(tmp.name, aw_path)
+    except Exception:
+        pass
+
 response_preview = data.get("last_assistant_message", "")[:300]
 response_preview = re.sub(r"sk-[a-zA-Z0-9]{20,}", "[REDACTED_KEY]", response_preview)
 response_preview = re.sub(r"ghp_[a-zA-Z0-9]{36,}", "[REDACTED_TOKEN]", response_preview)

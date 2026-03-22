@@ -171,10 +171,15 @@ for e in events:
         if p:
             artifacts.append(p)
 
+model = aw.get("model") or "unknown"
+permission_mode = aw.get("permission_mode") or "unknown"
+
 package = {
-    "package_version": "1.0",
+    "package_version": "1.1",
     "workflow_id": wf_id,
     "stellar_powers_version": sp_version,
+    "model": model,
+    "permission_mode": permission_mode,
     "context": {
         "repo": repo,
         "task_type": task_type,
@@ -194,6 +199,15 @@ package = {
     "artifacts": artifacts,
     "completion_feedback": completion_feedback,
     "outcome": outcome,
+    "session_stats": {
+        "total_events": len(events),
+        "user_messages_count": len(user_messages),
+        "ai_responses_count": len(ai_responses),
+        "tool_failures_count": len(tool_failures),
+        "subagent_dispatches": sum(1 for e in events if e.get("event") == "agent_dispatch"),
+        "subagent_completions": sum(1 for e in events if e.get("event") == "subagent_completed"),
+        "hook_violations": sum(1 for e in events if e.get("event") == "hook_violation"),
+    },
 }
 
 if stage:
