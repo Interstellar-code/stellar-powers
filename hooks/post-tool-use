@@ -46,21 +46,30 @@ subagent_type = tool_input.get("subagent_type", "")
 model = tool_input.get("model", "")
 description = tool_input.get("description", "")
 
-# Exempt dispatches: platform subagent types (not user-authored)
-if subagent_type in ("Explore", "Plan", "claude-code-guide", "statusline-setup"):
+# Platform-internal subagent types — skip entirely (not user-visible work)
+if subagent_type in ("Plan", "claude-code-guide", "statusline-setup"):
     sys.exit(0)
 
-# Exempt dispatches: stellar-powers agent types
+# Stellar-powers internal agent types — skip entirely
 if subagent_type and subagent_type.startswith("stellar-powers:"):
     sys.exit(0)
 
-# Exempt dispatches: built-in reviewer templates
-if "spec document reviewer" in prompt or "code quality reviewer" in prompt:
-    sys.exit(0)
+# Exempt from persona violation checks but still log the dispatch
+exempt_from_persona_check = (
+    subagent_type == "Explore"
+    or "spec document reviewer" in prompt
+    or "code quality reviewer" in prompt
+    or "plan document reviewer" in prompt
+)
 
-# Exempt dispatches: plan document reviewer
-if "plan document reviewer" in prompt:
-    sys.exit(0)
+# Read workflow_id from .active-workflow
+aw_path = os.path.join(cwd, ".stellar-powers", ".active-workflow")
+workflow_id = ""
+if os.path.exists(aw_path):
+    try:
+        workflow_id = json.load(open(aw_path)).get("workflow_id", "")
+    except Exception:
+        pass
 
 # Ensure .stellar-powers directory exists
 sp_dir = os.path.join(cwd, ".stellar-powers")
@@ -83,11 +92,10 @@ markers = [
 has_persona = any(m in prompt_lower for m in markers)
 
 # Write agent_dispatch event
-# workflow_id is empty - populated by skill-level logging, not hooks
 dispatch_event = {
     "ts": timestamp,
     "event": "agent_dispatch",
-    "workflow_id": "",
+    "workflow_id": workflow_id,
     "session": session_id,
     "data": {
         "persona": "",
@@ -103,12 +111,12 @@ try:
 except Exception:
     sys.exit(0)
 
-# If no persona detected, log violation and warn
-if not has_persona:
+# If no persona detected and not exempt, log violation
+if not has_persona and not exempt_from_persona_check:
     violation_event = {
         "ts": timestamp,
         "event": "hook_violation",
-        "workflow_id": "",
+        "workflow_id": workflow_id,
         "session": session_id,
         "data": {
             "type": "missing_persona_template",

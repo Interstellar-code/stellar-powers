@@ -164,6 +164,47 @@ python3 "$(find ~/.claude/plugins/cache/stellar-powers -name metrics-packager.py
 
 The script at `scripts/metrics-packager.py` handles everything: event extraction, rich package structure, null-field fallback, partial cleanup, and pruning.
 
+## Markdown Section Extraction
+
+**Use the standalone script** — extracts specific sections from markdown files by heading. Zero dependencies (Python stdlib only). This prevents subagents from reading entire plan/spec files when they only need specific tasks.
+
+```bash
+# Find the script
+MD_EXTRACT="$(find ~/.claude/plugins/cache/stellar-powers -name md-extract-section.py -maxdepth 5 2>/dev/null | head -1)"
+
+# Extract a single task (use --pattern for exact match):
+python3 "$MD_EXTRACT" plan.md --pattern "Task 3:"
+
+# Extract multiple tasks (for batched dispatch):
+python3 "$MD_EXTRACT" plan.md --pattern "Task [345]:"
+
+# Extract overview (everything before first ## heading):
+python3 "$MD_EXTRACT" plan.md --overview
+
+# Combine overview + specific tasks for agent context:
+OVERVIEW=$(python3 "$MD_EXTRACT" plan.md --overview)
+TASKS=$(python3 "$MD_EXTRACT" plan.md --pattern "Task 3:")
+# Inject $OVERVIEW and $TASKS into agent prompt instead of telling agent to Read the full file
+```
+
+**Write mode** — replace a section's body in-place (heading preserved):
+```bash
+# Update Task 3 with completed status:
+echo "- [x] Step 1: Done
+- [x] Step 2: Done" | python3 "$MD_EXTRACT" plan.md --write --pattern "Task 3:"
+
+# Update a spec section with revised content:
+echo "$REVISED_CONTENT" | python3 "$MD_EXTRACT" spec.md --write "Data Model"
+```
+
+**When to use:**
+- **Read:** Before dispatching implementer subagents — extract only the task(s) being assigned
+- **Read:** Before dispatching reviewer subagents — extract overview + relevant tasks instead of full plan
+- **Read:** When plan/spec exceeds ~8K tokens (subagents have 10K read limits)
+- **Write:** When updating task status, revising spec sections, or applying review feedback to specific sections
+
+**Token savings:** Typically 90-97% reduction vs reading the full plan file.
+
 <details><summary>Legacy inline packager (deprecated — do not use)</summary>
 
 Skills previously used inline Python heredocs. These were skipped by agents in practice.

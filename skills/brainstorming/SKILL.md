@@ -327,6 +327,12 @@ digraph brainstorming {
   ```
   Replace `SPEC_PATH` and `TOPIC` with actual values.
 
+- After logging spec_created, create a partial metrics snapshot to capture brainstorming progress:
+  ```bash
+  # MANDATORY: Create partial metrics snapshot after spec is written
+  SP_WF_ID="${WF_ID}" python3 "$(find ~/.claude/plugins/cache/stellar-powers -name metrics-packager.py -maxdepth 5 2>/dev/null | head -1)" --partial --stage brainstorming-spec
+  ```
+
 **Spec Review Loop:**
 After writing the spec document:
 

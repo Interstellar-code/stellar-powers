@@ -276,7 +276,7 @@ Parse rules:
 
 **Completed tasks (DONE / DONE_WITH_CONCERNS):** Two-stage review using one reviewer per stage:
 
-**Stage 1 — Spec compliance:** dispatch `./spec-reviewer-prompt.md` with all completed task descriptions + per-task SHAs. Reviewer delivers per-task verdicts.
+**Stage 1 — Spec compliance:** dispatch `./spec-reviewer-prompt.md` with plan overview + completed task descriptions (extracted via `md-extract-section.py`) + per-task SHAs. Do NOT tell the reviewer to Read the full plan — inline the extracted context. Reviewer delivers per-task verdicts.
 
 After receiving the Stage 1 verdict, log it immediately:
 ```bash
@@ -335,8 +335,17 @@ Plans annotated by `writing-plans` include persona tags in each task heading:
 1. Read the persona tag from the task heading (e.g., `[backend-architect]`)
 2. Read the matching persona file: `personas/curated/{tag}.md` (for `frontend-engineer` use `personas/source/engineering/engineering-frontend-developer.md`). If no tag, infer from file paths (see Persona Injection section above)
 3. Read `./implementer-prompt.md` template
-4. Fill in the template: paste the persona content into `## Agent Persona`, paste FULL task text into `## Task Description`, add project context + gotchas
-5. Dispatch the subagent with the filled template
+4. **Extract task context from plan** — do NOT tell the subagent to Read the full plan file (large plans exceed subagent read limits). Instead, extract and inline the relevant sections:
+   ```bash
+   MD_EXTRACT="$(find ~/.claude/plugins/cache/stellar-powers -name md-extract-section.py -maxdepth 5 2>/dev/null | head -1)"
+   # For solo task:
+   PLAN_OVERVIEW=$(python3 "$MD_EXTRACT" PLAN_PATH --overview)
+   TASK_CONTEXT=$(python3 "$MD_EXTRACT" PLAN_PATH --pattern "Task N:")
+   # For batched tasks (e.g., tasks 3-5):
+   TASK_CONTEXT=$(python3 "$MD_EXTRACT" PLAN_PATH --pattern "Task [345]:")
+   ```
+   Paste `$PLAN_OVERVIEW` and `$TASK_CONTEXT` into the prompt's `## Task Description` section, along with project context + gotchas
+5. Dispatch the subagent with the filled template — the subagent should NOT need to read any plan/spec files itself
 
 **You MUST read the persona file BEFORE constructing the prompt. Do NOT skip this step.**
 
