@@ -497,6 +497,117 @@ echo "Test 11: Rollback documentation"
 echo "  INFO: To disable feedback: set feedback_enabled to false in .stellar-powers/config.json"
 PASS=$((PASS + 1))
 
+# ─── v1.8+ Feature Tests ─────────────────────────────────────────────────────
+
+echo ""
+echo "Test 12: CLAUDE_PLUGIN_ROOT not needed in packager calls"
+  # Verify no skill file references CLAUDE_PLUGIN_ROOT directly
+  if ! grep -rq 'CLAUDE_PLUGIN_ROOT.*metrics-packager' skills/ 2>/dev/null; then
+    echo "  PASS: no CLAUDE_PLUGIN_ROOT references in packager calls"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: CLAUDE_PLUGIN_ROOT references still exist in skills"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 13: Persona catalog files exist for all referenced tags"
+  PERSONA_ERRORS=0
+  for persona in backend-architect code-reviewer devops-automator security-engineer software-architect senior-project-manager sprint-prioritizer; do
+    if [ ! -f "personas/curated/$persona.md" ]; then
+      echo "  FAIL: personas/curated/$persona.md missing"
+      PERSONA_ERRORS=$((PERSONA_ERRORS + 1))
+    fi
+  done
+  if [ ! -f "personas/source/engineering/engineering-frontend-developer.md" ]; then
+    echo "  FAIL: frontend-engineer persona missing"
+    PERSONA_ERRORS=$((PERSONA_ERRORS + 1))
+  fi
+  if [ "$PERSONA_ERRORS" -eq 0 ]; then
+    echo "  PASS: all 8 persona files exist"
+    PASS=$((PASS + 1))
+  else
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 14: SDD skill has persona injection section"
+  if grep -q "## Persona Injection" skills/subagent-driven-development/SKILL.md && \
+     grep -q "personas/curated" skills/subagent-driven-development/SKILL.md && \
+     grep -q "without a persona" skills/subagent-driven-development/SKILL.md; then
+    echo "  PASS: persona injection section with curated references and red flag"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: persona injection incomplete in SDD"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 15: Writing-plans has mandatory persona tags"
+  if grep -q "MANDATORY.*persona" skills/writing-plans/SKILL.md && \
+     grep -q "\[persona-tag\]" skills/writing-plans/SKILL.md && \
+     grep -q "Persona Assignment" skills/writing-plans/SKILL.md; then
+    echo "  PASS: persona tags mandatory in writing-plans"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: persona tag enforcement incomplete"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 16: Plan reviewer checks for persona tags"
+  if grep -q "Task Annotations.*persona" skills/writing-plans/plan-document-reviewer-prompt.md; then
+    echo "  PASS: plan reviewer checks persona tags"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: plan reviewer missing persona check"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 17: HARD-GATE before execution handoff"
+  if grep -q "HARD-GATE" skills/writing-plans/SKILL.md && \
+     grep -q "Plan Review Loop.*APPROVED" skills/writing-plans/SKILL.md; then
+    echo "  PASS: HARD-GATE blocks execution without review"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: HARD-GATE missing"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 18: Model capture in user-prompt-submit hook"
+  if grep -q "model.*permission_mode" hooks/user-prompt-submit && \
+     grep -q "aw\[.model.\]" hooks/user-prompt-submit; then
+    echo "  PASS: user-prompt-submit captures model"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: model capture missing from user-prompt-submit"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 19: Packager uses find instead of CLAUDE_PLUGIN_ROOT"
+  if grep -q "find.*plugins.*cache.*stellar-powers.*metrics-packager" skills/subagent-driven-development/SKILL.md; then
+    echo "  PASS: packager uses dynamic find"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: packager not using find"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 20: Standalone packager has model and session_stats"
+  if grep -q "model" scripts/metrics-packager.py && \
+     grep -q "session_stats" scripts/metrics-packager.py && \
+     grep -q "permission_mode" scripts/metrics-packager.py; then
+    echo "  PASS: packager outputs model, permission_mode, session_stats"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: packager missing new fields"
+    FAIL=$((FAIL + 1))
+  fi
+
 # ─── Summary ─────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
