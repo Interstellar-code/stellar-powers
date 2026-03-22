@@ -110,6 +110,7 @@ Task tool (general-purpose):
     | Environment config | New env vars documented with examples (API keys, URLs, secrets) |
     | Code fences | All code blocks have language specifiers and are properly closed |
     | API/function existence | Tasks reference functions, methods, or config that actually exist in the codebase — grep to verify before approving |
+    | File deletions | Any task that deletes files must justify why — flag deletion of config, identity, manifest, or env files as HIGH RISK |
 
     ## Calibration
 
