@@ -85,6 +85,7 @@ timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 prompt_lower = prompt.lower()
 markers = [
     "you are a",
+    "agent persona:",
     "## agent persona catalog",
     "## persona summary",
     "### core:",
