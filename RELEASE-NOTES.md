@@ -1,5 +1,22 @@
 # Stellar Powers Release Notes
 
+## v1.7.0 — Standalone Packager + SDD Quality Fixes (Issues #3, #4)
+
+Major architecture change + execution quality improvements:
+- **New:** `scripts/metrics-packager.py` — standalone packager replaces 1,254 lines of inline Python heredocs across 6 skills. Supports `--partial --stage NAME` and `--prune` flags. Agents reliably execute a one-liner command vs skipping 150-line heredocs.
+- **New:** Execution-stage partial snapshot — terminal skills create a partial metrics package at start, before implementation begins. Full 4-stage flow: brainstorming → writing-plans → execution → completion.
+- **Fix:** SDD plan detail loss — explicit "Do NOT condense or summarize" mandate in Red Flags + implementer template. 300-line plans were being condensed to 100 lines, losing API details and gotchas.
+- **Fix:** Runtime verification — MANDATORY verification step (tests, types, lint, build) after all tasks complete, before claiming done. References `verification-before-completion` skill.
+- **Fix:** Project gotchas injection — SDD reads `.claude/` memory files and CLAUDE.md for known issues (PGlite, Select null types, import ordering). Dedicated "Project Gotchas" section in implementer prompt.
+- **Fix:** Plan reviewer — added Framework Correctness checks: server/client component boundaries, i18n completeness across all locales, routing/state invalidation patterns.
+- **Fix:** snippets.md updated to reference standalone script, legacy inline code deprecated.
+- **New:** Model and permission_mode capture — Stop hook writes model info to `.active-workflow`, packager includes it in metrics. Enables analysis of skill quality by model (Opus vs Sonnet vs Haiku).
+- **New:** Session stats in metrics — event counts, subagent dispatches, subagent completions, hook violations.
+- **New:** Package version bumped to 1.1 (adds `model`, `permission_mode`, `session_stats` fields).
+- **Eval score:** 33/33 tests + 7/7 scenarios = 100%
+
+---
+
 ## v1.6.0 — Second Autoresearch Cycle (Issue #3)
 
 Improvements driven by self-improving-agent analysis of Issue #3 (nyayasathi-app admin-script-integration):
