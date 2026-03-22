@@ -61,8 +61,11 @@ Task tool (general-purpose):
     1. Implement exactly what the task specifies
     2. Write tests (following TDD if task says to)
     3. Verify implementation works
-    4. **Run linter/formatter** if the project has one (`pnpm lint`, `pnpm check`, etc.)
-    5. Commit your work
+    4. **MANDATORY pre-commit checks** — run these and fix ALL errors before committing:
+       - Type check: `pnpm check:types` or `npx tsc --noEmit` (whichever the project uses)
+       - Linter: `pnpm lint` or the project's lint command
+       - If either fails on code YOU wrote, fix it. If it fails on pre-existing code you didn't touch, note it in your report but don't block on it.
+    5. Commit your work (quote paths containing `[` brackets to avoid zsh glob errors)
     6. Self-review (see below)
     7. Report back
 
