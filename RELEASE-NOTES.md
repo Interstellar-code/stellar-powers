@@ -1,5 +1,16 @@
 # Stellar Powers Release Notes
 
+## v1.8.0 — Persona-Driven Subagent Dispatch
+
+- **New:** Persona-driven task execution — writing-plans annotates each task with a persona tag (`[backend-architect]`, `[frontend-engineer]`, `[security-engineer]`, etc.) matched to the task's domain
+- **New:** SDD reads persona tags, loads full curated persona definitions from `personas/curated/`, and injects them into every implementer subagent prompt
+- **New:** Implementer prompt template has `## Agent Persona` section — subagents now receive expert-level behavioral guidance matched to their task type
+- **New:** SDD controller operates as `project-manager` persona — coordinating, tracking, verifying
+- **Fix:** Red Flag added — "Dispatch an implementer without a persona" is now a violation
+- **Fix:** Fallback inference from file paths when plans lack persona tags (legacy compatibility)
+
+---
+
 ## v1.7.0 — Standalone Packager + SDD Quality Fixes (Issues #3, #4)
 
 Major architecture change + execution quality improvements:
