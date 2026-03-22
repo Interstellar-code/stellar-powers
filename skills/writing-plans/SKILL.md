@@ -68,7 +68,15 @@ After reading and understanding the spec:
 ```bash
 python3 -c "
 import json
+from datetime import datetime, timezone
 aw = json.load(open('.stellar-powers/.active-workflow'))
+wf_id = aw.get('workflow_id', '')
+# Log step completed
+ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+event = json.dumps({'ts': ts, 'event': 'step_completed', 'workflow_id': wf_id, 'session': '', 'data': {'skill': 'writing-plans', 'step': 'reading_spec', 'step_number': 1}})
+with open('.stellar-powers/workflow.jsonl', 'a') as f:
+    f.write(event + '\n')
+# Update active workflow
 aw['step'] = 'reading_spec'
 aw['step_number'] = 1
 json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
@@ -79,7 +87,15 @@ After library verification (Context7):
 ```bash
 python3 -c "
 import json
+from datetime import datetime, timezone
 aw = json.load(open('.stellar-powers/.active-workflow'))
+wf_id = aw.get('workflow_id', '')
+# Log step completed
+ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+event = json.dumps({'ts': ts, 'event': 'step_completed', 'workflow_id': wf_id, 'session': '', 'data': {'skill': 'writing-plans', 'step': 'library_verification', 'step_number': 2}})
+with open('.stellar-powers/workflow.jsonl', 'a') as f:
+    f.write(event + '\n')
+# Update active workflow
 aw['step'] = 'library_verification'
 aw['step_number'] = 2
 json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
@@ -90,7 +106,15 @@ After writing all tasks:
 ```bash
 python3 -c "
 import json
+from datetime import datetime, timezone
 aw = json.load(open('.stellar-powers/.active-workflow'))
+wf_id = aw.get('workflow_id', '')
+# Log step completed
+ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+event = json.dumps({'ts': ts, 'event': 'step_completed', 'workflow_id': wf_id, 'session': '', 'data': {'skill': 'writing-plans', 'step': 'writing_tasks', 'step_number': 3}})
+with open('.stellar-powers/workflow.jsonl', 'a') as f:
+    f.write(event + '\n')
+# Update active workflow
 aw['step'] = 'writing_tasks'
 aw['step_number'] = 3
 json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
@@ -101,7 +125,15 @@ After plan review loop completes:
 ```bash
 python3 -c "
 import json
+from datetime import datetime, timezone
 aw = json.load(open('.stellar-powers/.active-workflow'))
+wf_id = aw.get('workflow_id', '')
+# Log step completed
+ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+event = json.dumps({'ts': ts, 'event': 'step_completed', 'workflow_id': wf_id, 'session': '', 'data': {'skill': 'writing-plans', 'step': 'plan_review', 'step_number': 4}})
+with open('.stellar-powers/workflow.jsonl', 'a') as f:
+    f.write(event + '\n')
+# Update active workflow
 aw['step'] = 'plan_review'
 aw['step_number'] = 4
 json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
@@ -112,7 +144,15 @@ Before execution handoff:
 ```bash
 python3 -c "
 import json
+from datetime import datetime, timezone
 aw = json.load(open('.stellar-powers/.active-workflow'))
+wf_id = aw.get('workflow_id', '')
+# Log step completed
+ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+event = json.dumps({'ts': ts, 'event': 'step_completed', 'workflow_id': wf_id, 'session': '', 'data': {'skill': 'writing-plans', 'step': 'execution_handoff', 'step_number': 5}})
+with open('.stellar-powers/workflow.jsonl', 'a') as f:
+    f.write(event + '\n')
+# Update active workflow
 aw['step'] = 'execution_handoff'
 aw['step_number'] = 5
 json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))

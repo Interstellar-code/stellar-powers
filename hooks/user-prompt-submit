@@ -42,6 +42,23 @@ workflow_id = aw.get("workflow_id", "")
 active_skill = aw.get("skill", "")
 active_step = aw.get("step", "")
 
+# Capture model and permission_mode into .active-workflow if not already set
+model = data.get("model", "") or data.get("metadata", {}).get("model", "")
+permission_mode = data.get("permission_mode", "")
+if (model or permission_mode) and not aw.get("model"):
+    if model:
+        aw["model"] = model
+    if permission_mode:
+        aw["permission_mode"] = permission_mode
+    try:
+        import tempfile
+        tmp = tempfile.NamedTemporaryFile(mode="w", dir=os.path.dirname(aw_path), delete=False, suffix=".tmp")
+        json.dump(aw, tmp)
+        tmp.close()
+        os.rename(tmp.name, aw_path)
+    except Exception:
+        pass
+
 prompt = data.get("prompt", "")
 if not prompt:
     sys.exit(0)

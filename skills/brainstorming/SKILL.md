@@ -83,7 +83,15 @@ You MUST create a task for each of these items and complete them in order:
    ```bash
    python3 -c "
    import json
+   from datetime import datetime, timezone
    aw = json.load(open('.stellar-powers/.active-workflow'))
+   wf_id = aw.get('workflow_id', '')
+   # Log step completed
+   ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+   event = json.dumps({'ts': ts, 'event': 'step_completed', 'workflow_id': wf_id, 'session': '', 'data': {'skill': 'brainstorming', 'step': 'explore_context', 'step_number': 1}})
+   with open('.stellar-powers/workflow.jsonl', 'a') as f:
+       f.write(event + '\n')
+   # Update active workflow
    aw['step'] = 'explore_context'
    aw['step_number'] = 1
    json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
@@ -94,7 +102,15 @@ You MUST create a task for each of these items and complete them in order:
    ```bash
    python3 -c "
    import json
+   from datetime import datetime, timezone
    aw = json.load(open('.stellar-powers/.active-workflow'))
+   wf_id = aw.get('workflow_id', '')
+   # Log step completed
+   ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+   event = json.dumps({'ts': ts, 'event': 'step_completed', 'workflow_id': wf_id, 'session': '', 'data': {'skill': 'brainstorming', 'step': 'clarifying_questions', 'step_number': 3}})
+   with open('.stellar-powers/workflow.jsonl', 'a') as f:
+       f.write(event + '\n')
+   # Update active workflow
    aw['step'] = 'clarifying_questions'
    aw['step_number'] = 3
    json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
@@ -104,7 +120,15 @@ You MUST create a task for each of these items and complete them in order:
    ```bash
    python3 -c "
    import json
+   from datetime import datetime, timezone
    aw = json.load(open('.stellar-powers/.active-workflow'))
+   wf_id = aw.get('workflow_id', '')
+   # Log step completed
+   ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+   event = json.dumps({'ts': ts, 'event': 'step_completed', 'workflow_id': wf_id, 'session': '', 'data': {'skill': 'brainstorming', 'step': 'propose_approaches', 'step_number': 4}})
+   with open('.stellar-powers/workflow.jsonl', 'a') as f:
+       f.write(event + '\n')
+   # Update active workflow
    aw['step'] = 'propose_approaches'
    aw['step_number'] = 4
    json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
@@ -114,7 +138,15 @@ You MUST create a task for each of these items and complete them in order:
    ```bash
    python3 -c "
    import json
+   from datetime import datetime, timezone
    aw = json.load(open('.stellar-powers/.active-workflow'))
+   wf_id = aw.get('workflow_id', '')
+   # Log step completed
+   ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+   event = json.dumps({'ts': ts, 'event': 'step_completed', 'workflow_id': wf_id, 'session': '', 'data': {'skill': 'brainstorming', 'step': 'present_design', 'step_number': 5}})
+   with open('.stellar-powers/workflow.jsonl', 'a') as f:
+       f.write(event + '\n')
+   # Update active workflow
    aw['step'] = 'present_design'
    aw['step_number'] = 5
    json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
@@ -124,7 +156,15 @@ You MUST create a task for each of these items and complete them in order:
    ```bash
    python3 -c "
    import json
+   from datetime import datetime, timezone
    aw = json.load(open('.stellar-powers/.active-workflow'))
+   wf_id = aw.get('workflow_id', '')
+   # Log step completed
+   ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+   event = json.dumps({'ts': ts, 'event': 'step_completed', 'workflow_id': wf_id, 'session': '', 'data': {'skill': 'brainstorming', 'step': 'write_doc', 'step_number': 6}})
+   with open('.stellar-powers/workflow.jsonl', 'a') as f:
+       f.write(event + '\n')
+   # Update active workflow
    aw['step'] = 'write_doc'
    aw['step_number'] = 6
    json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
@@ -134,7 +174,15 @@ You MUST create a task for each of these items and complete them in order:
    ```bash
    python3 -c "
    import json
+   from datetime import datetime, timezone
    aw = json.load(open('.stellar-powers/.active-workflow'))
+   wf_id = aw.get('workflow_id', '')
+   # Log step completed
+   ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+   event = json.dumps({'ts': ts, 'event': 'step_completed', 'workflow_id': wf_id, 'session': '', 'data': {'skill': 'brainstorming', 'step': 'spec_review', 'step_number': 7}})
+   with open('.stellar-powers/workflow.jsonl', 'a') as f:
+       f.write(event + '\n')
+   # Update active workflow
    aw['step'] = 'spec_review'
    aw['step_number'] = 7
    json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
@@ -144,7 +192,15 @@ You MUST create a task for each of these items and complete them in order:
    ```bash
    python3 -c "
    import json
+   from datetime import datetime, timezone
    aw = json.load(open('.stellar-powers/.active-workflow'))
+   wf_id = aw.get('workflow_id', '')
+   # Log step completed
+   ts = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+   event = json.dumps({'ts': ts, 'event': 'step_completed', 'workflow_id': wf_id, 'session': '', 'data': {'skill': 'brainstorming', 'step': 'user_review', 'step_number': 8}})
+   with open('.stellar-powers/workflow.jsonl', 'a') as f:
+       f.write(event + '\n')
+   # Update active workflow
    aw['step'] = 'user_review'
    aw['step_number'] = 8
    json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
