@@ -118,6 +118,13 @@ ISSUE_BODY
 )"
 ```
 
+<HARD-GATE>
+DATA VERIFICATION — Before proceeding to cleanup, verify the issue body contains BOTH `<details>` sections:
+1. Check the created issue contains "Raw Metrics" — if missing, the metrics JSON was not included
+2. Check the created issue contains "Raw Workflow Events" — if missing, the events were not included
+If either is missing, update the issue with the missing data BEFORE proceeding. The cleanup step will permanently delete the source files.
+</HARD-GATE>
+
 ### 3f. Handle Success or Failure
 
 - On success: rename the file from `.json` to `.json.sent`

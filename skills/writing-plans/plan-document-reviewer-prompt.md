@@ -109,6 +109,7 @@ Task tool (general-purpose):
     | Migration ordering | Schema tasks ordered before tasks that reference new tables |
     | Environment config | New env vars documented with examples (API keys, URLs, secrets) |
     | Code fences | All code blocks have language specifiers and are properly closed |
+    | API/function existence | Tasks reference functions, methods, or config that actually exist in the codebase — grep to verify before approving |
 
     ## Calibration
 

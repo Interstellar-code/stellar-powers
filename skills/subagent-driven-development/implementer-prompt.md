@@ -54,6 +54,7 @@ Task tool (general-purpose):
     - **Import ordering:** external packages first, then internal/project imports, then relative imports. Each group separated by a blank line. Run the project's linter/formatter if available.
     - **Follow existing patterns:** Read 1-2 existing files in the same directory before writing new code. Match naming, structure, error handling patterns.
     - **Check Project Gotchas above** before writing any code — they document recurring mistakes.
+    - **Never delete files not listed in the task's Files section.** If you think a file should be removed, report it — don't delete it. Deleting system files (identity configs, manifests, env files) can break the project.
 
     ## Your Job
 
