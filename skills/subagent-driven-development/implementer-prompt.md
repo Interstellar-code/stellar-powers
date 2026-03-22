@@ -49,15 +49,22 @@ Task tool (general-purpose):
 
     **Ask them now.** Raise any concerns before starting work.
 
+    ## Code Standards (non-negotiable)
+
+    - **Import ordering:** external packages first, then internal/project imports, then relative imports. Each group separated by a blank line. Run the project's linter/formatter if available.
+    - **Follow existing patterns:** Read 1-2 existing files in the same directory before writing new code. Match naming, structure, error handling patterns.
+    - **Check Project Gotchas above** before writing any code — they document recurring mistakes.
+
     ## Your Job
 
     Once you're clear on requirements:
     1. Implement exactly what the task specifies
     2. Write tests (following TDD if task says to)
     3. Verify implementation works
-    4. Commit your work
-    5. Self-review (see below)
-    6. Report back
+    4. **Run linter/formatter** if the project has one (`pnpm lint`, `pnpm check`, etc.)
+    5. Commit your work
+    6. Self-review (see below)
+    7. Report back
 
     Work from: [directory]
 

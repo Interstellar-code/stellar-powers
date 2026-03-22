@@ -200,6 +200,10 @@ Use the least powerful model that can handle each role to conserve cost and incr
 
 Implementer subagents report one of four statuses. Handle each appropriately:
 
+<HARD-GATE>
+Do NOT mark any task as complete or move to the next task until BOTH reviews (spec compliance AND code quality) have passed. If you have not dispatched the spec reviewer subagent after an implementer reports DONE, STOP and do it now.
+</HARD-GATE>
+
 **DONE:** Proceed to spec compliance review.
 
 **DONE_WITH_CONCERNS:** The implementer completed the work but flagged doubts. Read the concerns before proceeding. If the concerns are about correctness or scope, address them before review. If they're observations (e.g., "this file is getting large"), note them and proceed to review.
