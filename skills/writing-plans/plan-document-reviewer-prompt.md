@@ -93,6 +93,23 @@ Task tool (general-purpose):
     | Project Conventions | Do tasks follow existing codebase patterns? Schema conventions, migration tools, component APIs |
     | Framework Correctness | Server/client component boundaries (no passing functions from server to client components), routing patterns (router.refresh vs router.push vs revalidation), i18n completeness (all supported locales covered) |
 
+    ## Safety & Completeness Checklist
+
+    Cross-check EVERY plan against this list. Each missed item is an issue:
+
+    | Check | What to verify |
+    |-------|----------------|
+    | Error handling | Every external call (email, payment, API) has try/catch or error boundary |
+    | Transactions | Multi-table writes wrapped in transactions |
+    | Cascade behavior | DELETE operations specify cascade/restrict behavior for FK relations |
+    | Auth/authorization | Route protection matches spec's access levels (admin vs user vs public) |
+    | Input validation | Max lengths, required fields, existence checks before update/delete |
+    | i18n completeness | Translations for ALL supported locales, not just primary language |
+    | Testing task | At least one task covers tests (unit, integration, or e2e) |
+    | Migration ordering | Schema tasks ordered before tasks that reference new tables |
+    | Environment config | New env vars documented with examples (API keys, URLs, secrets) |
+    | Code fences | All code blocks have language specifiers and are properly closed |
+
     ## Calibration
 
     **Only flag issues that would cause real problems during implementation.**
@@ -105,10 +122,7 @@ Task tool (general-purpose):
     Pay special attention to:
     - Schema changes: do they follow existing model patterns for timestamps, defaults, constraints?
     - Database operations: do they use the project's migration tool, not raw SQL?
-    - Input validation: max lengths, existence checks before update/delete
-    - HTML validity
     - Server/client component boundaries: can event handlers and callbacks cross the boundary? Are "use client" directives placed correctly?
-    - i18n: are translations provided for ALL supported locales, not just the primary language?
     - State invalidation: after mutations, does the plan specify how to refresh cached data (router.refresh, revalidation, cache tags)?
 
     ## Output Format
