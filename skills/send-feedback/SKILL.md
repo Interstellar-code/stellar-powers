@@ -91,6 +91,16 @@ Build the body as:
 ```
 
 </details>
+
+<details><summary>Raw Workflow Events</summary>
+
+```jsonl
+{contents of .stellar-powers/workflow.jsonl — include ALL events for this workflow_id, one per line.
+Read the file, filter lines matching the workflow_id from the metrics package, and paste them here.
+If workflow.jsonl has been pruned (only workflow_summary remains), include just the summary line.}
+```
+
+</details>
 ```
 
 ### 3e. Create GitHub Issue
