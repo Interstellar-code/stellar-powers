@@ -1,5 +1,22 @@
 # Stellar Powers Release Notes
 
+## v1.9.0 — Enforcement Gates + Quality Fixes (Issue #5)
+
+Fixes driven by third autoresearch cycle analyzing Issue #5:
+- **Fix:** CLAUDE_PLUGIN_ROOT not available in bash tool — packager calls were silently failing. Replaced with dynamic `find` across all 7 skill files.
+- **Fix:** Import ordering rule added directly to implementer prompt as Code Standards section — recurring issue across every session despite Project Gotchas.
+- **Fix:** HARD-GATE added to SDD — blocks task completion without both spec + code quality reviews passing. Agent was skipping reviews in every session.
+- **Fix:** HARD-GATE added to writing-plans — blocks execution handoff without plan review. Agent was rushing to SDD.
+- **Fix:** Model/permission_mode capture moved to user-prompt-submit hook (Stop hook doesn't receive model field).
+- **Fix:** Step logging combined with .active-workflow updates — one python3 block instead of two commands. 12 step blocks updated.
+- **Fix:** Plan reviewer now enforces persona tags and context completeness as blocking issues.
+- **Fix:** Spec reviewer checks implementation detail level.
+- **Fix:** Persona tags made MANDATORY in task headings with explicit notice in Task Structure section.
+- **New:** 42 tests + 7 scenarios (was 33 + 7). Added 9 tests for v1.8+ features.
+- **Eval score:** 42/42 tests + 7/7 scenarios = 100%
+
+---
+
 ## v1.8.0 — Persona-Driven Subagent Dispatch
 
 - **New:** Persona-driven task execution — writing-plans annotates each task with a persona tag (`[backend-architect]`, `[frontend-engineer]`, `[security-engineer]`, etc.) matched to the task's domain
