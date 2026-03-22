@@ -239,15 +239,15 @@ c) Complete, and here's my feedback: [user types feedback]"
 echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"workflow_completed\",\"workflow_id\":\"${WF_ID}\",\"session\":\"${CLAUDE_SESSION_ID:-}\",\"data\":{\"skill\":\"finishing-a-development-branch\",\"duration_minutes\":DURATION,\"steps_completed\":N,\"steps_total\":TOTAL,\"outcome\":\"success\",\"completion_feedback\":\"USER_FEEDBACK_OR_EMPTY\"}}" >> .stellar-powers/workflow.jsonl
 ```
 
-2. Package metrics and prune workflow.jsonl:
+2. Package metrics:
 ```bash
-# MANDATORY: Package metrics and prune workflow.jsonl
+# MANDATORY: Package metrics
 export SP_WF_ID="${WF_ID}"
 export SP_REPO=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('repo') or 'unknown')" 2>/dev/null || echo "unknown")
 export SP_TASK_TYPE=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('task_type') or 'unknown')" 2>/dev/null || echo "unknown")
 export SP_VERSION=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('sp_version') or 'unknown')" 2>/dev/null || echo "unknown")
 export SP_TOPIC=$(python3 -c "import json; print(json.load(open('.stellar-powers/.active-workflow')).get('topic') or 'unknown')" 2>/dev/null || echo "unknown")
-python3 "$(find ~/.claude/plugins/cache/stellar-powers -name metrics-packager.py -maxdepth 5 2>/dev/null | head -1)" --prune
+python3 "$(find ~/.claude/plugins/cache/stellar-powers -name metrics-packager.py -maxdepth 5 2>/dev/null | head -1)"
 ```
 
 3. Cleanup:
