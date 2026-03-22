@@ -370,6 +370,10 @@ Replace `GATE_NAME` with e.g. `plan_review` or `execution_choice`, and `FIRST_20
 
 **Verbal corrections:** If the user provides corrective feedback outside a formal review gate (e.g., "no that's wrong", "you missed X", "don't do Y"), also log a user_correction event. Use your judgment — a simple "yes" or "continue" is not a correction. A redirect, disagreement, or gap identification is.
 
+<HARD-GATE>
+Do NOT offer execution options or invoke any implementation skill until the Plan Review Loop above has completed with an APPROVED verdict. If you have not dispatched the plan reviewer subagent, STOP and do it now.
+</HARD-GATE>
+
 ## Execution Handoff
 
 Before offering execution choice, create a partial metrics snapshot:
