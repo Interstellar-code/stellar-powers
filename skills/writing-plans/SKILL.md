@@ -376,11 +376,13 @@ Do NOT offer execution options or invoke any implementation skill until the Plan
 
 ## Execution Handoff
 
-Before offering execution choice, create a partial metrics snapshot:
+<HARD-GATE>
+METRICS CHECKPOINT — Before offering execution choice, you MUST create a partial metrics snapshot. This captures the full writing-plans stage including review iterations. Run this BEFORE presenting options to the user:
 ```bash
-# MANDATORY: Create partial metrics snapshot before handoff
 SP_WF_ID="${WF_ID}" python3 "$(find ~/.claude/plugins/cache/stellar-powers -name metrics-packager.py -maxdepth 5 2>/dev/null | head -1)" --partial --stage writing-plans
 ```
+Verify output contains `METRICS_PACKAGE=` before continuing.
+</HARD-GATE>
 
 After saving the plan, offer execution choice:
 

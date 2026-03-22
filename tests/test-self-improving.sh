@@ -652,6 +652,32 @@ echo "Test 24: md-extract-section.py exists and has read+write modes"
     FAIL=$((FAIL + 1))
   fi
 
+echo ""
+echo "Test 25: Stop hook has metrics enforcement check"
+  if grep -q "metrics_reminder" hooks/stop && grep -q "Stage boundary" hooks/stop; then
+    echo "  PASS: stop hook checks for missing metrics partials at stage boundaries"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: stop hook missing metrics enforcement"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 26: Metrics calls use HARD-GATE blocks in skills"
+  HARDGATE_COUNT=0
+  for skill in skills/brainstorming/SKILL.md skills/writing-plans/SKILL.md skills/executing-plans/SKILL.md; do
+    if grep -q "HARD-GATE" "$skill" && grep -q "METRICS CHECKPOINT" "$skill" 2>/dev/null; then
+      HARDGATE_COUNT=$((HARDGATE_COUNT + 1))
+    fi
+  done
+  if [ "$HARDGATE_COUNT" -ge 3 ]; then
+    echo "  PASS: all 3 key skills have HARD-GATE metrics checkpoints ($HARDGATE_COUNT found)"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: only $HARDGATE_COUNT/3 skills have HARD-GATE metrics checkpoints"
+    FAIL=$((FAIL + 1))
+  fi
+
 # ─── Summary ─────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

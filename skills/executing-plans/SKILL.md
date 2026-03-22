@@ -34,9 +34,13 @@ aw['workflow_id'] = '${WF_ID}'
 json.dump(aw, open(aw_path, 'w'))
 " 2>/dev/null
 
-# MANDATORY: Create partial metrics snapshot at execution start
+# Create partial metrics snapshot at execution start
 SP_WF_ID="${WF_ID}" python3 "$(find ~/.claude/plugins/cache/stellar-powers -name metrics-packager.py -maxdepth 5 2>/dev/null | head -1)" --partial --stage execution
 ```
+
+<HARD-GATE>
+METRICS CHECKPOINT — The bash block above includes a metrics packager call. Verify its output contains `METRICS_PACKAGE=`. If you did not run it or it failed, run it now before proceeding to task execution.
+</HARD-GATE>
 
 After each task completion, log:
 

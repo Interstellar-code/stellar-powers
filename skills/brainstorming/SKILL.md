@@ -327,11 +327,13 @@ digraph brainstorming {
   ```
   Replace `SPEC_PATH` and `TOPIC` with actual values.
 
-- After logging spec_created, create a partial metrics snapshot to capture brainstorming progress:
-  ```bash
-  # MANDATORY: Create partial metrics snapshot after spec is written
-  SP_WF_ID="${WF_ID}" python3 "$(find ~/.claude/plugins/cache/stellar-powers -name metrics-packager.py -maxdepth 5 2>/dev/null | head -1)" --partial --stage brainstorming-spec
-  ```
+<HARD-GATE>
+METRICS CHECKPOINT — After logging spec_created, you MUST create a partial metrics snapshot BEFORE proceeding to spec review. This is not optional telemetry — it captures workflow state that would be lost if the session ends. Run this immediately after the spec_created log:
+```bash
+SP_WF_ID="${WF_ID}" python3 "$(find ~/.claude/plugins/cache/stellar-powers -name metrics-packager.py -maxdepth 5 2>/dev/null | head -1)" --partial --stage brainstorming-spec
+```
+Verify output contains `METRICS_PACKAGE=` before continuing.
+</HARD-GATE>
 
 **Spec Review Loop:**
 After writing the spec document:
@@ -357,11 +359,13 @@ Replace `GATE_NAME` with the gate name (e.g., `design_section_approval`, `spec_r
 
 **Implementation:**
 
-- Before invoking writing-plans, create a partial metrics snapshot:
-  ```bash
-  # MANDATORY: Create partial metrics snapshot before handoff
-  SP_WF_ID="${WF_ID}" python3 "$(find ~/.claude/plugins/cache/stellar-powers -name metrics-packager.py -maxdepth 5 2>/dev/null | head -1)" --partial --stage brainstorming
-  ```
+<HARD-GATE>
+METRICS CHECKPOINT — Before invoking writing-plans, you MUST create a partial metrics snapshot. This captures the full brainstorming stage. Run this BEFORE updating .active-workflow:
+```bash
+SP_WF_ID="${WF_ID}" python3 "$(find ~/.claude/plugins/cache/stellar-powers -name metrics-packager.py -maxdepth 5 2>/dev/null | head -1)" --partial --stage brainstorming
+```
+Verify output contains `METRICS_PACKAGE=` before continuing.
+</HARD-GATE>
 
 - Before invoking writing-plans, update .active-workflow for the handoff:
   ```bash

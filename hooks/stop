@@ -86,6 +86,59 @@ event = json.dumps({
 
 with open(wf_file, "a") as f:
     f.write(event + "\n")
+
+# Metrics enforcement: check if a stage boundary was crossed without a partial
+# Stage boundaries: spec_created, plan_created, skill_invocation (new skill starting)
+# If we see these in recent events but no metrics/ dir or no partial for this workflow, warn
+metrics_dir = os.path.join(cwd, ".stellar-powers", "metrics")
+wf_short = workflow_id[:8] if workflow_id else ""
+
+if wf_short and os.path.exists(wf_file):
+    # Read last 5 events for this workflow
+    recent = []
+    with open(wf_file) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                evt = json.loads(line)
+                if evt.get("workflow_id") == workflow_id:
+                    recent.append(evt)
+            except:
+                pass
+    recent = recent[-10:]
+
+    # Check for stage boundaries in recent events
+    boundary_events = [e for e in recent if e.get("event") in ("spec_created", "plan_created", "skill_invocation")]
+
+    if boundary_events:
+        # Check if a partial exists for this workflow
+        has_partial = False
+        if os.path.exists(metrics_dir):
+            for fname in os.listdir(metrics_dir):
+                if wf_short in fname and fname.endswith(".json"):
+                    has_partial = True
+                    break
+
+        if not has_partial:
+            # Log a reminder event — this surfaces in workflow.jsonl for analysis
+            reminder = json.dumps({
+                "ts": ts,
+                "event": "metrics_reminder",
+                "workflow_id": workflow_id,
+                "session": session_id,
+                "data": {
+                    "reason": "Stage boundary crossed without metrics partial",
+                    "boundary_event": boundary_events[-1].get("event", ""),
+                    "active_skill": active_skill
+                }
+            })
+            with open(wf_file, "a") as f:
+                f.write(reminder + "\n")
+
+            # Write to stderr so it surfaces as hook output to the agent
+            print(f"METRICS REMINDER: A {boundary_events[-1].get('event','')} event was logged but no metrics partial exists. Run the metrics packager with --partial --stage {active_skill}", file=sys.stderr)
 ' 2>/dev/null
 
 exit 0
