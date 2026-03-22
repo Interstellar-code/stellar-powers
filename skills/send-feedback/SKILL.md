@@ -95,9 +95,9 @@ Build the body as:
 <details><summary>Raw Workflow Events</summary>
 
 ```jsonl
-{contents of .stellar-powers/workflow.jsonl — include ALL events for this workflow_id, one per line.
-Read the file, filter lines matching the workflow_id from the metrics package, and paste them here.
-If workflow.jsonl has been pruned (only workflow_summary remains), include just the summary line.}
+{Read the `raw_events` array from the metrics package JSON. Print each event as a single JSONL line.
+The raw_events are preserved in the metrics package by the packager — they survive workflow.jsonl pruning.
+If the package has no raw_events field (older package version), fall back to reading workflow.jsonl.}
 ```
 
 </details>

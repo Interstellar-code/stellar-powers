@@ -199,6 +199,7 @@ package = {
     "artifacts": artifacts,
     "completion_feedback": completion_feedback,
     "outcome": outcome,
+    "raw_events": events,
     "session_stats": {
         "total_events": len(events),
         "user_messages_count": len(user_messages),
