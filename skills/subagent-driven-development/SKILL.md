@@ -244,7 +244,8 @@ This applies per-task — a plan can have a mix of annotated and unannotated tas
 4. `[solo]` tasks always get their own sub-agent
 5. **Dependency detection:** A task has a dependency if: (a) it references another task by number (e.g., "uses the schema from Task 2"), (b) its Files section lists a file created by a prior task, or (c) its steps reference output from a prior task. Promote dependent `[batch]` tasks to `[solo]`
 6. Batches are formed from consecutive tasks only — do not reorder
-7. **Token budget:** Before dispatching a batch, estimate combined prompt size. If >60k tokens, split into smaller batches
+7. **Persona boundary:** Only batch tasks with the SAME persona tag. Tasks with different personas (e.g., `[backend-architect]` + `[frontend-engineer]`) must be dispatched separately — each persona sets different rules and expertise. A backend task batched with a frontend task gets neither persona's full benefit.
+8. **Token budget:** Before dispatching a batch, estimate combined prompt size. If >60k tokens, split into smaller batches
 
 ### Batch Dispatch
 
@@ -328,7 +329,16 @@ Plans annotated by `writing-plans` include persona tags in each task heading:
 
 ## Prompt Templates
 
-**MANDATORY:** Before dispatching any subagent, Read the corresponding prompt template file using the Read tool. Use the template's contents as the subagent prompt. Do NOT construct your own ad-hoc prompts — the templates contain persona injections (Software Architect, Code Reviewer) that ensure expert-level review quality.
+**MANDATORY:** Before dispatching any subagent, follow these steps IN ORDER:
+
+**For implementer dispatches:**
+1. Read the persona tag from the task heading (e.g., `[backend-architect]`)
+2. Read the matching persona file: `personas/curated/{tag}.md` (for `frontend-engineer` use `personas/source/engineering/engineering-frontend-developer.md`). If no tag, infer from file paths (see Persona Injection section above)
+3. Read `./implementer-prompt.md` template
+4. Fill in the template: paste the persona content into `## Agent Persona`, paste FULL task text into `## Task Description`, add project context + gotchas
+5. Dispatch the subagent with the filled template
+
+**You MUST read the persona file BEFORE constructing the prompt. Do NOT skip this step.**
 
 - `./implementer-prompt.md` - Read and use as prompt when dispatching implementer subagent
 - `./spec-reviewer-prompt.md` - Read and use as prompt when dispatching spec compliance reviewer subagent (contains Software Architect persona)
