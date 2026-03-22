@@ -47,6 +47,7 @@ if not os.path.exists(wf_file):
 
 # Read events for this workflow
 events = []
+already_pruned = False
 with open(wf_file) as f:
     for line in f:
         line = line.strip()
@@ -56,8 +57,30 @@ with open(wf_file) as f:
             evt = json.loads(line)
             if evt.get("workflow_id") == wf_id:
                 events.append(evt)
+                if evt.get("event") == "workflow_summary":
+                    already_pruned = True
         except Exception:
             continue
+
+# If already pruned, check if we have a partial package to promote instead
+if already_pruned and len(events) <= 2:
+    metrics_dir = os.path.join(cwd, ".stellar-powers", "metrics")
+    partials = [f for f in os.listdir(metrics_dir) if wf_id[:8] in f and f.endswith("-partial.json")] if os.path.exists(metrics_dir) else []
+    if partials:
+        # Promote partial to full — it has the rich data from before pruning
+        partial_path = os.path.join(metrics_dir, partials[0])
+        full_path = partial_path.replace("-partial.json", ".json")
+        pkg = json.load(open(partial_path))
+        pkg["stage"] = "completed-from-partial"
+        pkg["outcome"] = "success"
+        pkg["timeline"]["user_confirmed_complete"] = True
+        with open(full_path, "w") as f:
+            json.dump(pkg, f, indent=2)
+        os.remove(partial_path)
+        print(f"METRICS_PACKAGE={full_path} (promoted from partial — workflow was already pruned)")
+        sys.exit(0)
+    else:
+        print("WARNING: workflow already pruned and no partial exists — metrics will be sparse", file=sys.stderr)
 
 # Load .active-workflow if present
 aw_path = os.path.join(cwd, ".stellar-powers", ".active-workflow")
