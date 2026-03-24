@@ -103,7 +103,7 @@ Task tool (general-purpose):
     | Transactions | Multi-table writes wrapped in transactions |
     | Cascade behavior | DELETE operations specify cascade/restrict behavior for FK relations |
     | Auth/authorization | Route protection matches spec's access levels (admin vs user vs public) |
-    | Input validation | Max lengths, required fields, existence checks before update/delete |
+    | Input validation | Max lengths, required fields, existence checks before update/delete, file size limits, upload quotas, resource caps |
     | i18n completeness | Translations for ALL supported locales, not just primary language |
     | Testing task | At least one task covers tests (unit, integration, or e2e) |
     | Migration ordering | Schema tasks ordered before tasks that reference new tables |
