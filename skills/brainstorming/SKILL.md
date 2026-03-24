@@ -273,7 +273,8 @@ digraph brainstorming {
   - Route conventions and URL patterns — match the project's existing routing structure
   - Storage and infrastructure patterns — if the project uses local storage, don't propose cloud services; if it uses a specific ORM, use it
   - Dependency inventory — prefer libraries already in use over introducing new ones
-  - Existing API contracts — if integrating with existing endpoints or functions, read their signatures and parameters; don't assume
+  - Existing API contracts and abstraction layers — if integrating with existing endpoints or functions, read their signatures and parameters; if the project has ORM plugins, middleware hooks, or service layers, use them instead of direct DB/API access
+  - Project documentation — check for architecture guides, ADRs, or CONTRIBUTING docs that define conventions the design must follow
   This scan prevents the most common correction: proposing approaches that ignore how the project already works.
 - Propose 2-3 different approaches with trade-offs
 - Present options conversationally with your recommendation and reasoning
@@ -304,6 +305,10 @@ digraph brainstorming {
 - Scale each section to its complexity: a few sentences if straightforward, up to 200-300 words if nuanced
 - Ask after each section whether it looks right so far
 - Cover: architecture, components, data flow, error handling, concurrency (race conditions, locks, transactions), cache invalidation strategy, testing
+- For features that create or modify resources, also cover:
+  - **State lifecycle** — what happens at each stage (creation → activation → usage → cleanup)? Are there initialization steps that must complete before the resource is usable? (e.g., setting active org after creating it)
+  - **Idempotency and recovery** — if the operation partially fails, can it be retried safely? What state is left behind?
+  - **Side effects on existing behavior** — will this change break or regress existing flows? (e.g., removing a field that the UI displays, adding an early return that skips downstream logic)
 - Be ready to go back and clarify if something doesn't make sense
 
 **Design for isolation and clarity:**
