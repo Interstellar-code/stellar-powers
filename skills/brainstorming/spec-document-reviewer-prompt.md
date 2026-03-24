@@ -89,6 +89,21 @@ Task tool (general-purpose):
     | Scope | Focused enough for a single plan — not covering multiple independent subsystems |
     | YAGNI | Unrequested features, over-engineering |
 
+    ## Safety & Completeness Checklist
+
+    Cross-check EVERY spec against this list. Each missed item is an issue:
+
+    | Check | What to verify |
+    |-------|----------------|
+    | State lifecycle | For resources being created/modified: what happens at each stage (creation → activation → usage → cleanup)? Are there initialization steps that must complete before the resource is usable? |
+    | Idempotency | If the operation partially fails, can it be retried safely? What state is left behind? |
+    | Side effects | Will this change break or regress existing flows? Removing a field, adding an early return, changing a hook — trace the downstream impact |
+    | Existing patterns | Does the design use the project's existing data models, abstraction layers (ORM plugins, middleware), and conventions? Or does it bypass them? |
+    | Concurrency | Can this be called concurrently? Race conditions on shared resources? |
+    | Auth/permissions | Are access levels specified for every endpoint/operation? Do they match the project's existing permission model? |
+    | Backend test strategy | For backend features: are the key behaviors testable? Are route handlers, middleware, and DB operations covered? |
+    | Project docs | Does the design contradict the project's own architecture guides, ADRs, or conventions docs? |
+
     ## Calibration
 
     **Only flag issues that would cause real problems during implementation planning.**

@@ -127,6 +127,7 @@ Task tool (general-purpose):
     **Testing:**
     - Do tests actually verify behavior (not just mock behavior)?
     - Did I follow TDD if required?
+    - For backend tasks: did I write tests for route handlers, middleware logic, DB operations, and permission checks as specified in the plan?
     - Are tests comprehensive?
 
     If you find issues during self-review, fix them now before reporting.

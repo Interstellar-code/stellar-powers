@@ -678,6 +678,68 @@ echo "Test 26: Metrics calls use HARD-GATE blocks in skills"
     FAIL=$((FAIL + 1))
   fi
 
+echo ""
+echo "Test 27: Spec reviewer has safety & completeness checklist"
+  if grep -q "Safety & Completeness Checklist" skills/brainstorming/spec-document-reviewer-prompt.md 2>/dev/null; then
+    echo "  PASS: spec reviewer has safety checklist"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: spec reviewer missing safety checklist"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 28: Writing-plans requires backend test coverage section"
+  if grep -q "Backend & Middleware Test Coverage" skills/writing-plans/SKILL.md 2>/dev/null; then
+    echo "  PASS: writing-plans has backend test coverage section"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: writing-plans missing backend test coverage section"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 29: Brainstorming codebase scan includes key checks"
+  SCAN_CHECKS=0
+  for pattern in "data models" "Route conventions" "API contracts" "abstraction layers" "Project documentation"; do
+    if grep -q "$pattern" skills/brainstorming/SKILL.md 2>/dev/null; then
+      SCAN_CHECKS=$((SCAN_CHECKS + 1))
+    fi
+  done
+  if [ "$SCAN_CHECKS" -ge 5 ]; then
+    echo "  PASS: codebase scan covers all 5 key checks ($SCAN_CHECKS found)"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: codebase scan only covers $SCAN_CHECKS/5 checks"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 30: Implementer prompt includes backend testing self-review"
+  if grep -q "route handlers.*middleware.*DB operations" skills/subagent-driven-development/implementer-prompt.md 2>/dev/null; then
+    echo "  PASS: implementer self-review includes backend test checks"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: implementer self-review missing backend test checks"
+    FAIL=$((FAIL + 1))
+  fi
+
+echo ""
+echo "Test 31: Brainstorming design covers lifecycle and idempotency"
+  DESIGN_CHECKS=0
+  for pattern in "State lifecycle" "Idempotency" "Side effects"; do
+    if grep -q "$pattern" skills/brainstorming/SKILL.md 2>/dev/null; then
+      DESIGN_CHECKS=$((DESIGN_CHECKS + 1))
+    fi
+  done
+  if [ "$DESIGN_CHECKS" -ge 3 ]; then
+    echo "  PASS: design presentation covers lifecycle, idempotency, side effects ($DESIGN_CHECKS found)"
+    PASS=$((PASS + 1))
+  else
+    echo "  FAIL: design presentation only covers $DESIGN_CHECKS/3 design concerns"
+    FAIL=$((FAIL + 1))
+  fi
+
 # ─── Summary ─────────────────────────────────────────────────────────────────
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
