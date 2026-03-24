@@ -105,7 +105,7 @@ Task tool (general-purpose):
     | Auth/authorization | Route protection matches spec's access levels (admin vs user vs public) |
     | Input validation | Max lengths, required fields, existence checks before update/delete, file size limits, upload quotas, resource caps |
     | i18n completeness | Translations for ALL supported locales, not just primary language |
-    | Testing task | At least one task covers tests (unit, integration, or e2e). For backend/data features: plan MUST include seed+verify steps that test against actual DB state, not just type checks and unit tests |
+    | Testing task | Backend tasks must have concrete test steps for route handlers, middleware, DB operations, and permission logic — not just a test file path. Frontend testing is out of scope. Flag backend tasks that list a test file but don't specify what to test |
     | Migration ordering | Schema tasks ordered before tasks that reference new tables |
     | Environment config | New env vars documented with examples (API keys, URLs, secrets) |
     | Code fences | All code blocks have language specifiers and are properly closed |

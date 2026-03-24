@@ -291,22 +291,17 @@ git commit -m "feat: add specific feature"
 ```
 ````
 
-## Final Verification Task
+## Backend & Middleware Test Coverage
 
-Every plan MUST end with a verification task. This is not optional — it's the most commonly skipped part of implementation plans.
+Frontend testing is out of scope for this plugin. But **backend and middleware testing is not optional** — it is the most commonly skipped part of implementation plans.
 
-For **backend/data features**, the final task must include:
-- Seed realistic test data (not just empty DB)
-- Run the feature end-to-end against actual DB state
-- Verify all user flows described in the spec (e.g., "register → verify provisioned → verify data exists")
-- Check edge cases: partial failure recovery, concurrent access, permission boundaries
+For every backend task (API routes, procedures, middleware, DB operations), the plan MUST include concrete test steps that cover:
+- **Route/procedure handlers:** test with valid input, invalid input, unauthorized access
+- **Middleware:** test that it runs in the expected chain position, handles edge cases (e.g., early returns that swallow downstream logic)
+- **DB operations:** test create/read/update/delete against actual schema, including constraint violations and transaction rollback
+- **Permission/auth logic:** test each access level defined in the spec (admin vs user vs public)
 
-For **frontend features**, the final task must include:
-- Build passes, no type errors
-- Manual verification of key user flows
-- Responsive/accessibility checks if applicable
-
-For **full-stack features**, combine both. The verification task is always `[solo] [code-reviewer]`.
+Don't just list `Test: tests/path/test.py` in the Files section and hope the subagent figures it out. Write the actual test cases in the plan — the subagent needs to know *what* to test, not just *where* the test file goes.
 
 ## Task Annotations: [batch] / [solo]
 

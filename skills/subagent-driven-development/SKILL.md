@@ -173,7 +173,7 @@ Subagents report "DONE" based on code compilation and tests, NOT actual runtime 
 2. **Run type checking** if applicable (`tsc --noEmit`, `pnpm check:types`)
 3. **Run linting** if applicable (`pnpm lint`, `pnpm check`)
 4. **If it's a web app, check that it builds** (`pnpm build` or equivalent)
-5. **For backend/data features: seed and verify against actual DB state.** This is the most commonly skipped step. If the feature creates, modifies, or queries data, run the app (or a script), seed realistic test data, and verify the results match expectations. "Types compile" and "tests pass" are not proof that the feature works at runtime.
+5. **For backend/data features: verify against actual runtime behavior.** "Types compile" and "unit tests pass" are not proof that the feature works. If the feature creates, modifies, or queries data, verify that the backend tests cover route handlers, middleware, DB operations, and permission logic — and that they pass.
 6. **Report any failures to the user** before claiming completion
 
 If any verification fails, fix the issues before proceeding to the completion checkpoint. Do NOT skip verification because "the subagent said it works."
