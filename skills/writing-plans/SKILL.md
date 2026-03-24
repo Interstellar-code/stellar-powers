@@ -291,6 +291,23 @@ git commit -m "feat: add specific feature"
 ```
 ````
 
+## Final Verification Task
+
+Every plan MUST end with a verification task. This is not optional — it's the most commonly skipped part of implementation plans.
+
+For **backend/data features**, the final task must include:
+- Seed realistic test data (not just empty DB)
+- Run the feature end-to-end against actual DB state
+- Verify all user flows described in the spec (e.g., "register → verify provisioned → verify data exists")
+- Check edge cases: partial failure recovery, concurrent access, permission boundaries
+
+For **frontend features**, the final task must include:
+- Build passes, no type errors
+- Manual verification of key user flows
+- Responsive/accessibility checks if applicable
+
+For **full-stack features**, combine both. The verification task is always `[solo] [code-reviewer]`.
+
 ## Task Annotations: [batch] / [solo]
 
 Every task heading MUST include a `[batch]` or `[solo]` annotation. Assess each task against these complexity signals:
