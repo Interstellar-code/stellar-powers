@@ -268,6 +268,12 @@ digraph brainstorming {
 
 **Exploring approaches:**
 
+- **Ground proposals in the existing codebase.** Before proposing approaches, scan for:
+  - Existing data models and schemas — reuse existing tables/types rather than proposing new standalone ones
+  - Route conventions and URL patterns — match the project's existing routing structure
+  - Storage and infrastructure patterns — if the project uses local storage, don't propose cloud services; if it uses a specific ORM, use it
+  - Dependency inventory — prefer libraries already in use over introducing new ones
+  This scan prevents the most common correction: proposing approaches that ignore how the project already works.
 - Propose 2-3 different approaches with trade-offs
 - Present options conversationally with your recommendation and reasoning
 - Lead with your recommended option and explain why
