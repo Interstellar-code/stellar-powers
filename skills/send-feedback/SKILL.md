@@ -86,22 +86,26 @@ Build the body as:
 
 <details><summary>Raw Metrics</summary>
 
-```json
-{full metrics JSON, pretty-printed}
-```
+RAW_METRICS_PLACEHOLDER
 
 </details>
 
 <details><summary>Raw Workflow Events</summary>
 
-```jsonl
-{Read the `raw_events` array from the metrics package JSON. Print each event as a single JSONL line.
-The raw_events are preserved in the metrics package by the packager — they survive workflow.jsonl pruning.
-If the package has no raw_events field (older package version), fall back to reading workflow.jsonl.}
-```
+RAW_EVENTS_PLACEHOLDER
 
 </details>
 ```
+
+<HARD-GATE>
+RAW DATA SUBSTITUTION — Before creating the issue, you MUST replace the placeholders with actual data. Do NOT summarize, paraphrase, or abbreviate. The self-improving agent needs the raw data to analyze patterns.
+
+1. **RAW_METRICS_PLACEHOLDER** — Replace with the FULL metrics package JSON, pretty-printed inside a ```json code fence. This is the entire contents of the .json file you read in step 3a. Do not summarize it into bullet points.
+
+2. **RAW_EVENTS_PLACEHOLDER** — Replace with the `raw_events` array from the metrics package JSON. Print each event object as a single JSONL line inside a ```jsonl code fence. If the package has no `raw_events` field (older package version), read workflow.jsonl and include all events for this workflow_id.
+
+If the combined body exceeds GitHub's issue size limit (~65KB), truncate raw_events from the oldest events first, but NEVER truncate the metrics JSON.
+</HARD-GATE>
 
 ### 3e. Create GitHub Issue
 
