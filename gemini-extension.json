@@ -1,6 +1,6 @@
 {
   "name": "stellar-powers",
   "description": "Enhanced skills library with multi-persona subagent dispatch: TDD, debugging, collaboration patterns, and proven techniques",
-  "version": "1.9.10",
+  "version": "1.9.11",
   "contextFileName": "GEMINI.md"
 }
