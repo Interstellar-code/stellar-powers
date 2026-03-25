@@ -178,6 +178,8 @@ Before defining tasks, map out which files will be created or modified and what 
 - Files that change together should live together. Split by responsibility, not by technical layer.
 - In existing codebases, follow established patterns. If the codebase uses large files, don't unilaterally restructure - but if a file you're modifying has grown unwieldy, including a split in the plan is reasonable.
 
+**Cross-cutting impact analysis:** If the feature touches a cross-cutting concern (auth, permissions, file access, middleware, shared types/interfaces), you MUST trace the full blast radius before writing tasks. Grep for every consumer of the affected module — every route handler, procedure, component, and test that imports or depends on it. List all affected files in the File Structure section. A change to the auth model that only updates the auth file but ignores the 15 route handlers that consume it will produce a broken plan.
+
 This structure informs the task decomposition. Each task should produce self-contained changes that make sense independently.
 
 ## Bite-Sized Task Granularity

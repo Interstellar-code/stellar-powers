@@ -276,6 +276,7 @@ digraph brainstorming {
   - Existing API contracts and abstraction layers — if integrating with existing endpoints or functions, read their signatures and parameters; if the project has ORM plugins, middleware hooks, or service layers, use them instead of direct DB/API access
   - Project documentation — check for architecture guides, ADRs, or CONTRIBUTING docs that define conventions the design must follow
   This scan prevents the most common correction: proposing approaches that ignore how the project already works.
+- **Data modeling: prefer constrained over free-text.** When proposing fields that categorize, classify, or type entities, default to predefined/enum values rather than free-text. Free-text prevents filtering, reporting, and analytics. Only propose free-text when the domain genuinely requires unbounded input.
 - Propose 2-3 different approaches with trade-offs
 - Present options conversationally with your recommendation and reasoning
 - Lead with your recommended option and explain why

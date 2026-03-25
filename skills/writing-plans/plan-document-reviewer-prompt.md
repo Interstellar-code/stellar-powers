@@ -113,6 +113,7 @@ Task tool (general-purpose):
     | File deletions | Any task that deletes files must justify why — flag deletion of config, identity, manifest, or env files as HIGH RISK |
     | Integration layer | Proxy/gateway routes updated for new API paths, middleware chains include new routes, permission checks cover all new endpoints |
     | Path/reference consistency | Renamed or moved resources have ALL references updated (descendant paths, imports, cache keys, config entries) |
+    | Cross-cutting blast radius | If the feature changes auth, permissions, shared types, or middleware: does the plan update EVERY consumer? Grep to verify — a change to the auth model that only updates the auth file but ignores route handlers/procedures is incomplete |
 
     ## Calibration
 
