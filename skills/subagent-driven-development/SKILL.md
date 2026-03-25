@@ -10,7 +10,7 @@ Required tasks (create in this exact order):
 1. "[1/6] Read plan and extract tasks" — Read plan, extract all tasks with full text, note context and persona tags
 2. "[2/6] Execute all implementation tasks" — Dispatch implementer subagents (solo or batched), handle questions/blocks
 3. "[3/6] Review all tasks" — Dispatch spec reviewer + code quality reviewer for each task/batch
-4. "[4/6] Runtime verification" — Run test suite, type checks, linting, build, backend verification
+4. "[4/6] Testing & verification" — Unit tests, integration/backend tests, type checks, linting, build
 5. "[5/6] Documentation update" — Check for existing docs, offer to update with new feature (optional)
 6. "[6/6] Final review and finish" — Dispatch final code reviewer, invoke finishing-a-development-branch
 
@@ -177,22 +177,31 @@ echo "{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"review_verdict\",\"
 
 Replace `approved|issues_found` with the actual verdict, and increment `iteration` on each re-review loop.
 
-## Runtime Verification
+## Testing & Verification
 
-**MANDATORY: After all tasks pass review and before the completion checkpoint, run runtime verification.**
+**MANDATORY: After all tasks pass review and before the completion checkpoint, run testing and build verification.**
 
-Subagents report "DONE" based on code compilation and tests, NOT actual runtime behavior. You MUST verify the implementation works end-to-end.
+Subagents report "DONE" based on code compilation, NOT actual runtime behavior. You MUST verify the implementation works end-to-end.
 
 **Use the project's tooling, not raw shell commands.** Check `package.json` scripts, `.env` files, and project docs for how to run things. Don't use raw `psql` — use the project's DB client or ORM. Don't run workers/services directly — use the project's run scripts that load env vars. If a command fails with missing env vars or wrong DB credentials, you're bypassing the project's setup.
 
-1. **Run the project's test suite** if it exists (`npm test`, `pnpm test`, `pytest`, etc.)
-2. **Run type checking** if applicable (`tsc --noEmit`, `pnpm check:types`)
-3. **Run linting** if applicable (`pnpm lint`, `pnpm check`)
-4. **If it's a web app, check that it builds** (`pnpm build` or equivalent)
-5. **For backend/data features: verify against actual runtime behavior.** "Types compile" and "unit tests pass" are not proof that the feature works. If the feature creates, modifies, or queries data, verify that the backend tests cover route handlers, middleware, DB operations, and permission logic — and that they pass.
-6. **Report any failures to the user** before claiming completion
+### Unit & Integration Testing
 
-If any verification fails, fix the issues before proceeding to the completion checkpoint. Do NOT skip verification because "the subagent said it works."
+1. **Run the project's test suite** if it exists (`npm test`, `pnpm test`, `pytest`, etc.)
+2. **For backend/data features: run backend and middleware tests.** Verify that tests cover route handlers, middleware, DB operations, and permission logic — and that they pass. "Types compile" is not proof that the feature works.
+3. **If tests are missing or incomplete**, write them now. The plan should have specified test cases for backend tasks — implement them if the subagents didn't.
+
+### Build Verification
+
+4. **Run type checking** if applicable (`tsc --noEmit`, `pnpm check:types`)
+5. **Run linting** if applicable (`pnpm lint`, `pnpm check`)
+6. **If it's a web app, check that it builds** (`pnpm build` or equivalent)
+
+### Report
+
+7. **Report any failures to the user** before claiming completion
+
+If any testing or verification fails, fix the issues before proceeding to the completion checkpoint. Do NOT skip verification because "the subagent said it works."
 
 **REQUIRED SUB-SKILL:** Use `stellar-powers:verification-before-completion` for the verification checklist.
 
