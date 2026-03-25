@@ -180,7 +180,9 @@ Replace `approved|issues_found` with the actual verdict, and increment `iteratio
 
 **MANDATORY: After all tasks pass review and before the completion checkpoint, run runtime verification.**
 
-Subagents report "DONE" based on code compilation and tests, NOT actual runtime behavior. You MUST verify the implementation works end-to-end:
+Subagents report "DONE" based on code compilation and tests, NOT actual runtime behavior. You MUST verify the implementation works end-to-end.
+
+**Use the project's tooling, not raw shell commands.** Check `package.json` scripts, `.env` files, and project docs for how to run things. Don't use raw `psql` — use the project's DB client or ORM. Don't run workers/services directly — use the project's run scripts that load env vars. If a command fails with missing env vars or wrong DB credentials, you're bypassing the project's setup.
 
 1. **Run the project's test suite** if it exists (`npm test`, `pnpm test`, `pytest`, etc.)
 2. **Run type checking** if applicable (`tsc --noEmit`, `pnpm check:types`)
@@ -327,7 +329,7 @@ Plans annotated by `writing-plans` include persona tags in each task heading:
 **Before dispatching each implementer:**
 
 1. Read the persona tag from the task heading (e.g., `backend-architect`)
-2. Read the matching curated persona file: `personas/curated/{tag}.md` (e.g., `personas/curated/backend-architect.md`). For `frontend-engineer`, use `personas/source/engineering/engineering-frontend-developer.md`
+2. Read the matching curated persona file. On consumer repos, find it with: `find ~/.claude/plugins/cache/stellar-powers -name "{tag}.md" -path "*/personas/*" -maxdepth 6 2>/dev/null | head -1`. For `frontend-engineer`, search for `engineering-frontend-developer.md` instead
 3. Paste the full persona content into the implementer prompt's `## Agent Persona` section
 
 **If no persona tag exists** (unannotated plans or legacy tasks), infer from the task's files:
@@ -347,7 +349,7 @@ Plans annotated by `writing-plans` include persona tags in each task heading:
 
 **For implementer dispatches:**
 1. Read the persona tag from the task heading (e.g., `[backend-architect]`)
-2. Read the matching persona file: `personas/curated/{tag}.md` (for `frontend-engineer` use `personas/source/engineering/engineering-frontend-developer.md`). If no tag, infer from file paths (see Persona Injection section above)
+2. Read the matching persona file: find it with `find ~/.claude/plugins/cache/stellar-powers -name "{tag}.md" -path "*/personas/*" -maxdepth 6 2>/dev/null | head -1` (for `frontend-engineer` search for `engineering-frontend-developer.md`). If no tag, infer from file paths (see Persona Injection section above)
 3. Read `./implementer-prompt.md` template
 4. **Extract task context from plan** — do NOT tell the subagent to Read the full plan file (large plans exceed subagent read limits). Instead, extract and inline the relevant sections:
    ```bash

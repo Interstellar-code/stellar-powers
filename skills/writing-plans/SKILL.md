@@ -342,18 +342,24 @@ These annotations tell `subagent-driven-development` whether to batch consecutiv
 
 Every task heading MUST include a persona tag. The tag determines which expert persona the implementer subagent receives during execution.
 
-**Before assigning personas:** Browse `personas/curated/` to see all available personas. Each file contains a rich persona definition with specific rules, mission, and expertise that gets injected into the implementer subagent during execution.
+**Before assigning personas:** Browse the curated persona files to see all available personas. On consumer repos, these are in the plugin cache — find them with:
+```bash
+find ~/.claude/plugins/cache/stellar-powers -path "*/personas/curated" -maxdepth 4 2>/dev/null | head -1
+```
+Each file contains a rich persona definition with specific rules, mission, and expertise that gets injected into the implementer subagent during execution.
 
 **Tag selection — match the task's primary concern:**
 
-| Tag | Curated Persona | Use When Task Involves |
+| Tag | Persona File | Use When Task Involves |
 |---|---|---|
-| `backend-architect` | `personas/curated/backend-architect.md` | Schema, migration, database, API, procedures, middleware |
-| `frontend-engineer` | `personas/source/engineering/engineering-frontend-developer.md` | Components, pages, UI, styling, i18n, client-side state |
-| `security-engineer` | `personas/curated/security-engineer.md` | Auth, permissions, validation, input sanitization |
-| `software-architect` | `personas/curated/software-architect.md` | Architecture decisions, system design, boundaries |
-| `devops` | `personas/curated/devops-automator.md` | Dependencies, config, CI/CD, environment setup |
-| `code-reviewer` | `personas/curated/code-reviewer.md` | Tests, verification, quality checks |
+| `backend-architect` | `backend-architect.md` | Schema, migration, database, API, procedures, middleware |
+| `frontend-engineer` | `engineering-frontend-developer.md` (in `personas/source/engineering/`) | Components, pages, UI, styling, i18n, client-side state |
+| `security-engineer` | `security-engineer.md` | Auth, permissions, validation, input sanitization |
+| `software-architect` | `software-architect.md` | Architecture decisions, system design, boundaries |
+| `devops` | `devops-automator.md` | Dependencies, config, CI/CD, environment setup |
+| `code-reviewer` | `code-reviewer.md` | Tests, verification, quality checks |
+
+To read a persona file on consumer repos: `find ~/.claude/plugins/cache/stellar-powers -name "{filename}" -path "*/personas/*" -maxdepth 6 2>/dev/null | head -1`
 
 **Example:**
 ```

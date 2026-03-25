@@ -533,7 +533,7 @@ echo "Test 13: Persona catalog files exist for all referenced tags"
 echo ""
 echo "Test 14: SDD skill has persona injection section"
   if grep -q "## Persona Injection" skills/subagent-driven-development/SKILL.md && \
-     grep -q "personas/curated" skills/subagent-driven-development/SKILL.md && \
+     grep -q "personas/" skills/subagent-driven-development/SKILL.md && \
      grep -q "without a persona" skills/subagent-driven-development/SKILL.md; then
     echo "  PASS: persona injection section with curated references and red flag"
     PASS=$((PASS + 1))
