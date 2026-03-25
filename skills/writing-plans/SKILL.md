@@ -375,6 +375,7 @@ After writing the complete plan:
 - Same agent that wrote the plan fixes it (preserves context)
 - If loop exceeds 3 iterations, surface to human for guidance
 - Reviewers are advisory — explain disagreements if you believe feedback is incorrect
+- **When the user gives feedback at a review gate:** incorporate it into the plan and keep moving. Do not pause to ask "should I proceed?" or "would you like me to continue?" — the user gave feedback because they want the plan updated and the workflow to advance. Incorporate and go.
 
 **Correction capture at plan review gates:** If at any review gate (plan review loop, execution choice) the user's response is NOT a simple approval, log a user_correction event before acting on their feedback:
 ```bash
