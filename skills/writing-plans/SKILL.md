@@ -18,6 +18,19 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 **Save plans to:** `.stellar-powers/plans/YYYY-MM-DD-<feature-name>.md`
 - (User preferences for plan location override this default)
 
+<HARD-GATE>
+WORKFLOW TASK SCAFFOLD — Before any other work, create ALL of the following tasks using TaskCreate. These tasks persist across context compression and keep the workflow on track in long sessions. Mark each task completed (via TaskUpdate) as you finish it.
+
+Required tasks (create in this exact order):
+1. "[1/5] Read and understand spec" — Read the spec document, understand requirements and scope
+2. "[2/5] Write implementation plan" — Scope check, file structure, library verification, write all tasks
+3. "[3/5] Plan review loop" — Dispatch plan-document-reviewer subagent, fix issues until approved
+4. "[4/5] User reviews plan" — Present plan to user, incorporate feedback
+5. "[5/5] Execution handoff" — Metrics checkpoint, present execution options, invoke SDD
+
+Create all 5 tasks NOW before proceeding to workflow logging.
+</HARD-GATE>
+
 ## Workflow Logging
 
 On invocation, generate a workflow ID and log:

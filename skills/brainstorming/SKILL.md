@@ -19,7 +19,25 @@ Every project goes through this process. A todo list, a single-function utility,
 
 ## Checklist
 
-You MUST create a task for each of these items and complete them in order:
+<HARD-GATE>
+WORKFLOW TASK SCAFFOLD — Before any other work, create ALL of the following tasks using TaskCreate. These tasks persist across context compression and keep the workflow on track in long sessions. Mark each task completed (via TaskUpdate) as you finish it.
+
+Required tasks (create in this exact order):
+1. "[0/9] Workflow setup" — Generate workflow ID, check for active workflows, create .active-workflow
+2. "[1/9] Explore project context" — Check files, docs, recent commits
+3. "[2/9] Offer visual companion" — If UI/frontend topic, offer mockup companion
+4. "[3/9] Ask clarifying questions" — One at a time, multiple choice preferred
+5. "[4/9] Propose 2-3 approaches" — With trade-offs and recommendation
+6. "[5/9] Present design" — Section by section with user approval
+7. "[6/9] Write design doc" — Save spec to .stellar-powers/specs/, commit
+8. "[7/9] Spec review loop" — Dispatch spec-document-reviewer subagent
+9. "[8/9] User reviews spec" — Ask user to review before proceeding
+10. "[9/9] Transition to implementation" — Invoke writing-plans skill
+
+Create all 10 tasks NOW before proceeding to step 0.
+</HARD-GATE>
+
+## Checklist
 
 0. **Workflow setup** — Generate workflow ID and log skill invocation:
    ```bash

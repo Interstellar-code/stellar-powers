@@ -3,6 +3,19 @@ name: subagent-driven-development
 description: Use when executing implementation plans with independent tasks in the current session
 ---
 
+<HARD-GATE>
+WORKFLOW TASK SCAFFOLD — Before any other work, create ALL of the following tasks using TaskCreate. These tasks persist across context compression and keep the workflow on track in long sessions. Mark each task completed (via TaskUpdate) as you finish it.
+
+Required tasks (create in this exact order):
+1. "[1/5] Read plan and extract tasks" — Read plan, extract all tasks with full text, note context and persona tags
+2. "[2/5] Execute all implementation tasks" — Dispatch implementer subagents (solo or batched), handle questions/blocks
+3. "[3/5] Review all tasks" — Dispatch spec reviewer + code quality reviewer for each task/batch
+4. "[4/5] Runtime verification" — Run test suite, type checks, linting, build, backend verification
+5. "[5/5] Final review and finish" — Dispatch final code reviewer, invoke finishing-a-development-branch
+
+Create all 5 tasks NOW before proceeding to workflow logging.
+</HARD-GATE>
+
 ## Workflow Logging
 
 On invocation, generate a workflow ID and log:
