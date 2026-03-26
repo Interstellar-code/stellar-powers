@@ -13,6 +13,8 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
+**Never suggest session breaks or context switches.** The user manages context. Do not suggest ending the session, deferring to a new session, or switching contexts due to token usage. If the user has capacity, keep working.
+
 **Context:** This should be run in a dedicated worktree (created by brainstorming skill).
 
 **Save plans to:** `.stellar-powers/plans/YYYY-MM-DD-<feature-name>.md`

@@ -32,7 +32,7 @@ Required tasks (create in this exact order):
 7. "[6/9] Write design doc" — Save spec to .stellar-powers/specs/, commit
 8. "[7/9] Spec review loop" — Dispatch spec-document-reviewer subagent
 9. "[8/9] User reviews spec" — Ask user to review before proceeding
-10. "[9/9] Transition to implementation" — Invoke writing-plans skill
+10. "[9/9] Write implementation plan" — Invoke writing-plans skill to create the plan document (do NOT start coding)
 
 Create all 10 tasks NOW before proceeding to step 0.
 </HARD-GATE>
@@ -224,7 +224,7 @@ Create all 10 tasks NOW before proceeding to step 0.
    json.dump(aw, open('.stellar-powers/.active-workflow.tmp', 'w'))
    " && mv .stellar-powers/.active-workflow.tmp .stellar-powers/.active-workflow
    ```
-9. **Transition to implementation** — set up a git worktree for isolated implementation (invoke `stellar-powers:using-git-worktrees`), then invoke writing-plans skill to create implementation plan
+9. **Write implementation plan** — set up a git worktree for isolated implementation (invoke `stellar-powers:using-git-worktrees`), then invoke writing-plans skill to create the plan document. Do NOT start coding — writing-plans creates the plan, SDD executes it.
 
 ## Process Flow
 
