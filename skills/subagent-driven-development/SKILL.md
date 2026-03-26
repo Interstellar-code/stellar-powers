@@ -277,7 +277,7 @@ This applies per-task — a plan can have a mix of annotated and unannotated tas
 1. Group consecutive `[batch]` tasks into batches of 2-4
 2. Never exceed 4 tasks per batch (keeps combined prompt under ~60k tokens and reviewer diffs manageable)
 3. **Single trailing batch task:** If a consecutive group has exactly 1 `[batch]` task, dispatch it as solo — no efficiency benefit from a 1-task batch
-4. `[solo]` tasks always get their own sub-agent
+4. `[solo]` tasks get their own sub-agent by default, BUT: **consecutive solo tasks with the same persona tag** can be grouped into pairs (max 2) if they are independent (no dependencies between them). This reduces dispatch overhead when many solo tasks share a persona. Never group more than 2 solo tasks — they are solo for a reason
 5. **Dependency detection:** A task has a dependency if: (a) it references another task by number (e.g., "uses the schema from Task 2"), (b) its Files section lists a file created by a prior task, or (c) its steps reference output from a prior task. Promote dependent `[batch]` tasks to `[solo]`
 6. Batches are formed from consecutive tasks only — do not reorder
 7. **Persona boundary:** Only batch tasks with the SAME persona tag. Tasks with different personas (e.g., `[backend-architect]` + `[frontend-engineer]`) must be dispatched separately — each persona sets different rules and expertise. A backend task batched with a frontend task gets neither persona's full benefit.
