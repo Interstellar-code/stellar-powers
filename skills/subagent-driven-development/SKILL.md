@@ -272,6 +272,24 @@ Plans annotated by `writing-plans` include `[batch]` or `[solo]` in each task he
 
 This applies per-task — a plan can have a mix of annotated and unannotated tasks.
 
+### Cross-Layer Contract Enforcement
+
+**When a plan has both `[backend-architect]` and `[frontend-engineer]` tasks that share an API boundary** (e.g., backend builds an endpoint, frontend consumes it), enforce a shared contract before dispatching either side:
+
+1. **Detect cross-layer pairs:** Scan the plan for backend tasks that create/modify API endpoints and frontend tasks that consume them. Signal: they reference the same route, the same data entity, or frontend task depends on backend task
+2. **Extract or create the contract:** After the backend task completes, extract the API contract (route, request/response shapes, status codes, error format) from the committed code. Format as a typed interface block:
+   ```
+   ## Shared Contract: [Feature Name]
+   Route: POST /api/foo
+   Request: { field: string, count: number }
+   Response: { id: string, items: Array<{ name: string, status: "active" | "inactive" }> }
+   Error: { error: string, code: number }
+   ```
+3. **Inject into frontend dispatch:** Include the contract block in the frontend implementer's `## Context` section with the header `## API Contract (from backend implementation)`. Add: "You MUST use these exact field names and types. Do not rename, re-case, or restructure."
+4. **Reviewer check:** The spec compliance reviewer should verify frontend prop names match the contract exactly
+
+This prevents the recurring pattern where independent subagents diverge on prop naming (e.g., backend uses `gsc`, `range` while frontend expects `metrics`, `dateRange`).
+
 ### Grouping Rules
 
 1. Group consecutive `[batch]` tasks into batches of 2-4
