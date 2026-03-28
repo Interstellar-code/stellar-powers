@@ -104,6 +104,18 @@ Task tool (general-purpose):
     | Backend test strategy | For backend features: are the key behaviors testable? Are route handlers, middleware, and DB operations covered? |
     | Project docs | Does the design contradict the project's own architecture guides, ADRs, or conventions docs? |
 
+    ## Gap Analysis Checklist
+
+    These checks catch the contextual issues that human reviewers consistently find.
+    Apply each one — flag gaps, don't skip:
+
+    | Check | What to verify |
+    |-------|----------------|
+    | Naming consistency | Do proposed names (routes, fields, props, components) follow the project's existing conventions? Check casing (camelCase vs snake_case), abbreviation patterns, and domain terminology against what already exists in the codebase |
+    | API contract completeness | For every endpoint: are request fields, response fields, types, status codes, error response shapes, and pagination/filtering patterns all specified? Vague contracts cause frontend/backend divergence |
+    | Storage pattern alignment | Does the proposed storage approach (tables, columns, JSON fields, caching) match the project's existing patterns? Check ORM usage, migration style, soft-delete conventions, and JSON storage patterns |
+    | Similar feature comparison | Does the codebase already have a similar feature? If so, does this spec follow the same patterns, or diverge without justification? Flag unjustified divergence |
+
     ## Calibration
 
     **Only flag issues that would cause real problems during implementation planning.**
