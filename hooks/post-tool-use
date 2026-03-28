@@ -54,12 +54,17 @@ if subagent_type in ("Plan", "claude-code-guide", "statusline-setup"):
 if subagent_type and subagent_type.startswith("stellar-powers:"):
     sys.exit(0)
 
+prompt_lower = prompt.lower()
+
 # Exempt from persona violation checks but still log the dispatch
 exempt_from_persona_check = (
     subagent_type == "Explore"
-    or "spec document reviewer" in prompt
-    or "code quality reviewer" in prompt
-    or "plan document reviewer" in prompt
+    or "spec document reviewer" in prompt_lower
+    or "code quality reviewer" in prompt_lower
+    or "plan document reviewer" in prompt_lower
+    or "review the code quality" in prompt_lower
+    or "spec compliance" in prompt_lower
+    or "review spec document" in prompt_lower
 )
 
 # Read workflow_id from .active-workflow
@@ -82,7 +87,6 @@ workflow_file = os.path.join(sp_dir, "workflow.jsonl")
 timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 # Detect persona template markers (case-insensitive)
-prompt_lower = prompt.lower()
 markers = [
     "you are a",
     "agent persona:",
